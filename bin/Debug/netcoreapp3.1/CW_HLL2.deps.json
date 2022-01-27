@@ -1,0 +1,36 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v3.1",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v3.1": {
+      "CW_HLL2/1.0.0": {
+        "dependencies": {
+          "galEngine": "1.0.0"
+        },
+        "runtime": {
+          "CW_HLL2.dll": {}
+        }
+      },
+      "galEngine/1.0.0": {
+        "runtime": {
+          "galEngine.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "CW_HLL2/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "galEngine/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
