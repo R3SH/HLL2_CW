@@ -1,12 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Windows.Shapes;
+
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 
 namespace CW_HLL2
 {
-    public abstract class Entity
+    public abstract class Entity : baseObj
     {
         //private double _height, _width;
         //public double Height
@@ -38,21 +47,8 @@ namespace CW_HLL2
         //    }
         //}
 
-        private int _movSpeed, _projectileSpeed;
-        public int MovSpeed
-        {
-            get
-            {
-                return _movSpeed;
-            }
-            set
-            {
-                if (value <= 0)
-                    _movSpeed = 1;
-                else
-                    _movSpeed = value;
-            }
-        }
+        private int _projectileSpeed;
+
         public int ProjectileSpeed
         {
             get
@@ -71,6 +67,7 @@ namespace CW_HLL2
         public Rectangle hitBox;
 
         public Entity(double hght, double wdth, int mSpeed, int projSpeed)
+            : base(hght, wdth, mSpeed)
         {
             //Height = hght;
             //Width = wdth;

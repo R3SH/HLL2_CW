@@ -26,12 +26,13 @@ namespace CW_HLL2
         Plr PlayerData;
 
         bool enemyDirChange;
-        int enemySpeed = 2;
         int enemyDescSpeed = 10;
 
         int zakosInWave = 8;
-        double zakoW = 30;
-        double zakoH = 30;
+
+        List<bEnemy> enemyList;
+
+        List<Projectile> projectileList;
 
         bool movUp, movDown, movLeft, movRight;
         const int zakoPts = 50;
@@ -42,7 +43,9 @@ namespace CW_HLL2
 
         //Rectangle Player;
 
-        List<Rectangle> gc = new List<Rectangle>();
+        List<Rectangle> hitBoxGC;
+        List<bEnemy> enemyGC;
+        List<Projectile> projectileGC;
 
         DispatcherTimer runTimer = new DispatcherTimer();
         ImageBrush plrSkin = new ImageBrush();
@@ -71,6 +74,10 @@ namespace CW_HLL2
         {
             mCanvas.Focus();
 
+            hitBoxGC = new List<Rectangle>();
+            enemyGC = new List<bEnemy>();
+            projectileGC = new List<Projectile>();
+
             onPause = false;
 
             plrSkin.ImageSource = new BitmapImage(new Uri(Environment.CurrentDirectory + "/res/ship.png"));
@@ -81,12 +88,14 @@ namespace CW_HLL2
         private void GameStart()
         {
             PlayerData = new Plr(45, 45, 5, 8, 3, 0, plrSkin);
+            enemyList = new List<bEnemy>();
+            projectileList = new List<Projectile>();
 
             updateUI(PlayerData.Lives, PlayerData.Score);
 
-            SpawnPlayer(PlayerData.hitBox.Width, PlayerData.hitBox.Height, (mCanvas.Width - PlayerData.hitBox.Width) / 2, (mCanvas.Height - PlayerData.hitBox.Height) / 2);
+            SpawnPlayer((mCanvas.Width - PlayerData.hitBox.Width) / 2, (mCanvas.Height - PlayerData.hitBox.Height) / 2);
             SpawnZakoWave(50);
-            SpawnZakoWave(40 - zakoH);
+            SpawnZakoWave(40 - 30);
         }
 
         private void GameTick(object sender, EventArgs e)
@@ -97,7 +106,9 @@ namespace CW_HLL2
                 MoveEnemies();
                 CollisionCheck();
                 updateUI(PlayerData.Lives, PlayerData.Score);
-                gcClear();
+                gcHitBoxes();
+                gcEnemies();
+                gcProjectiles();
             }
             if (onPause)
             {
@@ -161,50 +172,63 @@ namespace CW_HLL2
 
         private void CollisionCheck()
         {
-            foreach(Rectangle prj in mCanvas.Children.OfType<Rectangle>())
+            //Check Projectiles
+            foreach(Projectile prj in projectileList)
             {
-                if((string)prj.Tag == "playerProjectile")
+                if(prj.IsPlayerProjectile)
                 {
-                    Canvas.SetTop(prj, Canvas.GetTop(prj) - PlayerData.ProjectileSpeed);
-                    Rect plrPrjHitbox = new Rect(Canvas.GetLeft(prj), Canvas.GetTop(prj), prj.Width, prj.Height);
+                    Canvas.SetTop(prj.hitBox, Canvas.GetTop(prj.hitBox) - PlayerData.ProjectileSpeed);
+                    Rect plrPrjHitbox = new Rect(Canvas.GetLeft(prj.hitBox), Canvas.GetTop(prj.hitBox), prj.hitBox.Width, prj.hitBox.Height);
 
-                    if (Canvas.GetTop(prj) <= -PlayerData.ProjectileSpeed)
-                        gc.Add(prj);
+                    if (Canvas.GetTop(prj.hitBox) <= -PlayerData.ProjectileSpeed)
+                        hitBoxGC.Add(prj.hitBox);
                     else
                     {
-                        foreach(Rectangle enemy in mCanvas.Children.OfType<Rectangle>())
+                        foreach (bEnemy enemy in enemyList)
                         {
-                            if((string)enemy.Tag == "zako")
-                            {
-                                Rect enemyHitbox = new Rect(Canvas.GetLeft(enemy), Canvas.GetTop(enemy), enemy.Width, enemy.Height);
+                            Rect enemyHitbox = new Rect(Canvas.GetLeft(enemy.hitBox), Canvas.GetTop(enemy.hitBox), enemy.hitBox.Width, enemy.hitBox.Height);
 
-                                if (plrPrjHitbox.IntersectsWith(enemyHitbox))
+                            if (plrPrjHitbox.IntersectsWith(enemyHitbox))
+                            {
+                                if (enemy.Health > 1)
                                 {
-                                    gc.Add(enemy);
-                                    gc.Add(prj);
-                                    PlayerData.AddScore(zakoPts);
-                                    PlayerData.EffectiveShots++;
+                                    enemy.Health--;
                                 }
+                                else
+                                {
+                                    if ((string)enemy.hitBox.Tag == "Drone")
+                                    {
+                                        PlayerData.AddScore(zakoPts);
+                                    }
+                                    PlayerData.EffectiveShots++;
+                                    hitBoxGC.Add(enemy.hitBox);
+                                    enemyGC.Add(enemy);
+                                }
+
+                                hitBoxGC.Add(prj.hitBox);
+                                projectileGC.Add(prj);
                             }
                         }
                     }
                 }
-                else if ((string)prj.Tag == "Player")
+                else
                 {
-                    Rect plrHitbox = new Rect(Canvas.GetLeft(prj), Canvas.GetTop(prj), prj.Width, prj.Height);
-                    foreach (Rectangle enemy in mCanvas.Children.OfType<Rectangle>())
-                    {
-                        if ((string)enemy.Tag == "zako")
-                        {
-                            Rect enemyHitbox = new Rect(Canvas.GetLeft(enemy), Canvas.GetTop(enemy), enemy.Width, enemy.Height);
+                    //if it's an enemy projectile
+                }
+            }
 
-                            if (plrHitbox.IntersectsWith(enemyHitbox))
-                            {
-                                PlayerData.RemoveLife();
-                                gc.Add(enemy);
-                            }
-                        }
-                    }
+            //Check player collision with enemies
+            Rect plrHitbox = new Rect(Canvas.GetLeft(PlayerData.hitBox), Canvas.GetTop(PlayerData.hitBox), PlayerData.hitBox.Width, PlayerData.hitBox.Height);
+
+            foreach (bEnemy enemy in enemyList)
+            {
+                Rect enemyHitbox = new Rect(Canvas.GetLeft(enemy.hitBox), Canvas.GetTop(enemy.hitBox), enemy.hitBox.Width, enemy.hitBox.Height);
+
+                if (plrHitbox.IntersectsWith(enemyHitbox))
+                {
+                    PlayerData.RemoveLife();
+                    hitBoxGC.Add(enemy.hitBox);
+                    enemyGC.Add(enemy);
                 }
             }
         }
@@ -214,35 +238,36 @@ namespace CW_HLL2
             enemyDirChange = false;
 
             //Direction check
-            foreach(Rectangle tmp in mCanvas.Children.OfType<Rectangle>()) if(!enemyDirChange)
+            foreach (bEnemy tmp in enemyList) if (!enemyDirChange)
             {
-                if ((string)tmp.Tag == "zako" && (((Canvas.GetLeft(tmp) + tmp.Width) >= (mCanvas.Width)) || (Canvas.GetLeft(tmp) <= 5)))
+                if (tmp.EnemyType != EnemyTypeList.Overseer && (((Canvas.GetLeft(tmp.hitBox) + tmp.hitBox.Width) >= (mCanvas.Width)) || (Canvas.GetLeft(tmp.hitBox) <= 5)))
                 {
                     enemyDirChange = true;
-                    enemySpeed *= -1;
+                    foreach (bEnemy ench in enemyList)
+                    {
+                        ench.changeMovDir();
+                    }
+
                     MoveEnemiesDown();
                 }
             }
 
-            MoveZakos();
+            foreach (bEnemy tmp in enemyList)
+            {
+                if (tmp.EnemyType != EnemyTypeList.Overseer)
+                    Canvas.SetLeft(tmp.hitBox, Canvas.GetLeft(tmp.hitBox) + tmp.MovSpeed);
+                //TODO: add height check?
+            }
+
+            //MoveOverseers();
         }
 
         private void MoveEnemiesDown()
         {
-            foreach (Rectangle tmp in mCanvas.Children.OfType<Rectangle>())
+            foreach (bEnemy tmp in enemyList)
             {
-                if ((string)tmp.Tag == "zako")
-                    Canvas.SetTop(tmp, Canvas.GetTop(tmp) + enemyDescSpeed);
-            }
-        }
-
-        private void MoveZakos()
-        {
-            foreach(Rectangle tmp in mCanvas.Children.OfType<Rectangle>())
-            {
-                if ((string)tmp.Tag == "zako")
-                    Canvas.SetLeft(tmp, Canvas.GetLeft(tmp) + enemySpeed);
-                //TODO: add height check?
+                if (tmp.EnemyType != EnemyTypeList.Overseer)
+                    Canvas.SetTop(tmp.hitBox, Canvas.GetTop(tmp.hitBox) + enemyDescSpeed);
             }
         }
 
@@ -271,16 +296,8 @@ namespace CW_HLL2
             }
         }
 
-        private void SpawnPlayer(double plrW, double plrH, double x, double y)
+        private void SpawnPlayer(double x, double y)
         {
-            //Player = new Rectangle
-            //{
-            //    Tag = "Player",
-            //    Width = plrW,
-            //    Height = plrH,
-            //    Fill = plrSkin
-            //};
-
             Canvas.SetLeft(PlayerData.hitBox, x);
             Canvas.SetTop(PlayerData.hitBox, y);
             mCanvas.Children.Add(PlayerData.hitBox);
@@ -288,17 +305,12 @@ namespace CW_HLL2
 
         private void SpawnZako(double x, double y)
         {
-            Rectangle newZako = new Rectangle
-            {
-                Tag = "zako",
-                Width = zakoW,
-                Height = zakoH,
-                Fill = zakoSprite
-            };
+            bEnemy newDrone = new bEnemy(30, 30, 2, 2, 1, EnemyTypeList.Drone, zakoSprite);
 
-            Canvas.SetLeft(newZako, x);
-            Canvas.SetTop(newZako, y);
-            mCanvas.Children.Add(newZako);
+            Canvas.SetLeft(newDrone.hitBox, x);
+            Canvas.SetTop(newDrone.hitBox, y);
+            mCanvas.Children.Add(newDrone.hitBox);
+            enemyList.Add(newDrone);
         }
 
         private void SpawnZakoWave(double y)
@@ -311,19 +323,13 @@ namespace CW_HLL2
 
         private void SpawnPlayerProjectile()
         {
-            Rectangle newProjectile = new Rectangle()
-            {
-                Tag = "playerProjectile",
-                Height = 16,
-                Width = 8
-            };
+            Projectile newProjectile = new Projectile(16, 8, PlayerData.ProjectileSpeed, 1, true, plrProjectile);
 
-            newProjectile.Fill = plrProjectile;
+            Canvas.SetLeft(newProjectile.hitBox, Canvas.GetLeft(PlayerData.hitBox) + (PlayerData.hitBox.Width - newProjectile.hitBox.Width) / 2);
+            Canvas.SetTop(newProjectile.hitBox, Canvas.GetTop(PlayerData.hitBox) - newProjectile.hitBox.Height);
 
-            Canvas.SetLeft(newProjectile, Canvas.GetLeft(PlayerData.hitBox) + (PlayerData.hitBox.Width - newProjectile.Width) / 2);
-            Canvas.SetTop(newProjectile, Canvas.GetTop(PlayerData.hitBox) - newProjectile.Height);
-
-            mCanvas.Children.Add(newProjectile);
+            mCanvas.Children.Add(newProjectile.hitBox);
+            projectileList.Add(newProjectile);
         }
 
         private void updateUI(int plrLives, int plrScore)
@@ -337,10 +343,22 @@ namespace CW_HLL2
             //print on pause
         }
 
-        private void gcClear()
+        private void gcHitBoxes()
         {
-            foreach (var tmp in gc)
+            foreach (var tmp in hitBoxGC)
                 mCanvas.Children.Remove(tmp);
+        }
+
+        private void gcEnemies()
+        {
+            foreach (var tmp in enemyGC)
+                enemyList.Remove(tmp);
+        }
+
+        private void gcProjectiles()
+        {
+            foreach (var tmp in projectileGC)
+                projectileList.Remove(tmp);
         }
     }
 }
