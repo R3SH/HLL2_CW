@@ -34,6 +34,8 @@ namespace CW_HLL2
 
         List<Projectile> projectileList;
 
+        int AnimUpdateTimer;
+
         bool movUp, movDown, movLeft, movRight;
         const int zakoPts = 50;
 
@@ -51,6 +53,8 @@ namespace CW_HLL2
         ImageBrush plrSkin = new ImageBrush();
         ImageBrush plrProjectile = new ImageBrush();
         ImageBrush zakoSprite = new ImageBrush();
+        BitmapImage spritesheetBI = new BitmapImage();
+        SpritesheetData spritesheetData;
 
         public MainWindow()
         {
@@ -62,7 +66,7 @@ namespace CW_HLL2
             runTimer.Tick += GameTick;
             runTimer.Interval = TimeSpan.FromMilliseconds(8);
             runTimer.Start();
-            
+
             if (PlayerData.IsDead())
             {
                 runTimer.Stop();
@@ -83,6 +87,10 @@ namespace CW_HLL2
             plrSkin.ImageSource = new BitmapImage(new Uri(Environment.CurrentDirectory + "/res/ship.png"));
             plrProjectile.ImageSource = new BitmapImage(new Uri(Environment.CurrentDirectory + "/res/projectiles/Shot4/shot4_5f.png"));
             zakoSprite.ImageSource = new BitmapImage(new Uri(Environment.CurrentDirectory + "/res/zako.png"));
+            spritesheetBI.BeginInit();
+            spritesheetBI.UriSource = new Uri(Environment.CurrentDirectory + "/res/spritesheet.png");
+            spritesheetBI.EndInit();
+            spritesheetData = new SpritesheetData();
         }
 
         private void GameStart()
@@ -94,14 +102,22 @@ namespace CW_HLL2
             updateUI(PlayerData.Lives, PlayerData.Score);
 
             SpawnPlayer((mCanvas.Width - PlayerData.hitBox.Width) / 2, (mCanvas.Height - PlayerData.hitBox.Height) / 2);
-            SpawnZakoWave(50);
-            SpawnZakoWave(40 - 30);
+            SpawnDroneWave(50);
+            SpawnDroneWave(40 - 30);
         }
 
         private void GameTick(object sender, EventArgs e)
         {
-            if (!PlayerData.IsDead())
+            if (onPause)
             {
+                //show pause menu
+            }
+            else if (!PlayerData.IsDead())
+            {
+                ++AnimUpdateTimer;
+                if (AnimUpdateTimer == 40)
+                    AnimUpdateTimer = 0;
+
                 HandlePlayerInput(PlayerData.MovSpeed);
                 MoveEnemies();
                 CollisionCheck();
@@ -109,10 +125,10 @@ namespace CW_HLL2
                 gcHitBoxes();
                 gcEnemies();
                 gcProjectiles();
-            }
-            if (onPause)
-            {
-                //show pause menu
+                if (AnimUpdateTimer == 0)
+                {
+                    AnimUpdate();
+                }
             }
             else
             {
@@ -124,7 +140,7 @@ namespace CW_HLL2
         {
             if (e.Key == Key.Escape)
             {
-                onPause = true;
+                onPause = !onPause;
                 //Application.Current.Shutdown();
             }
             if(e.Key == Key.Left)
@@ -303,9 +319,9 @@ namespace CW_HLL2
             mCanvas.Children.Add(PlayerData.hitBox);
         }
 
-        private void SpawnZako(double x, double y)
+        private void SpawnDrone(double x, double y)
         {
-            bEnemy newDrone = new bEnemy(30, 30, 2, 2, 1, EnemyTypeList.Drone, zakoSprite);
+            bEnemy newDrone = new bEnemy(30, 30, 2, 2, 1, EnemyTypeList.Drone, spritesheetBI, spritesheetData);
 
             Canvas.SetLeft(newDrone.hitBox, x);
             Canvas.SetTop(newDrone.hitBox, y);
@@ -313,11 +329,11 @@ namespace CW_HLL2
             enemyList.Add(newDrone);
         }
 
-        private void SpawnZakoWave(double y)
+        private void SpawnDroneWave(double y)
         {
             for (int i = 0; i < zakosInWave; i++)
             {
-                SpawnZako((double)i * (30 + 15) + 10, y);
+                SpawnDrone((double)i * (30 + 15) + 10, y);
             }
         }
 
@@ -336,6 +352,15 @@ namespace CW_HLL2
         {
             scoreData.Content = plrScore;
             highscoreData.Content = plrScore;
+        }
+
+        private void AnimUpdate()
+        {
+            foreach (bEnemy tmp in enemyList)
+            {
+                if (tmp.EnemyType != EnemyTypeList.Overseer)
+                    tmp.UpdateFrame(spritesheetData);
+            }
         }
 
         private void showPause()
