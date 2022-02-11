@@ -128,6 +128,7 @@ namespace CW_HLL2
                 if (AnimUpdateTimer == 0)
                 {
                     AnimUpdate();
+                    EnemyShoot();
                 }
             }
             else
@@ -227,9 +228,25 @@ namespace CW_HLL2
                         }
                     }
                 }
-                else
+                else    //if it's an enemy projectile
                 {
-                    //if it's an enemy projectile
+                    //!!!!!!!!!CHANGE SPEED TO ENEMIES PROJECTILE SPEED!!!!!!!!!
+                    Canvas.SetTop(prj.hitBox, Canvas.GetTop(prj.hitBox) + PlayerData.ProjectileSpeed);
+                    Rect enemyPrjHitbox = new Rect(Canvas.GetLeft(prj.hitBox), Canvas.GetTop(prj.hitBox), prj.hitBox.Width, prj.hitBox.Height);
+
+                    if (Canvas.GetTop(prj.hitBox) >= mCanvas.Height + PlayerData.ProjectileSpeed)
+                        hitBoxGC.Add(prj.hitBox);
+                    else
+                    {
+                        Rect playerHitbox = new Rect(Canvas.GetLeft(PlayerData.hitBox), Canvas.GetTop(PlayerData.hitBox), PlayerData.hitBox.Width, PlayerData.hitBox.Height);
+
+                        if (enemyPrjHitbox.IntersectsWith(playerHitbox))
+                        {
+                            PlayerData.RemoveLife();
+                            hitBoxGC.Add(prj.hitBox);
+                            projectileGC.Add(prj);
+                        }
+                    }
                 }
             }
 
@@ -276,6 +293,52 @@ namespace CW_HLL2
             }
 
             //MoveOverseers();
+        }
+
+        private void EnemyShoot()
+        {
+            int closestDr = -1;
+            //double minDist = Double.MaxValue;
+            double minDist = 100000;
+            double shootPos = 0;
+            int enemyNumber = -1;
+            bool freeLine = true;
+
+            foreach (bEnemy tmpEnemy in enemyList)
+            {
+                ++enemyNumber;
+                freeLine = true;
+                shootPos = Canvas.GetLeft(tmpEnemy.hitBox) + (tmpEnemy.hitBox.Width / 2) - 3;
+
+                foreach (bEnemy lineEnemy in enemyList)
+                {
+                    if ((shootPos >= Canvas.GetLeft(lineEnemy.hitBox)) && (shootPos <= Canvas.GetLeft(lineEnemy.hitBox) + lineEnemy.hitBox.Width) ||
+                        ((shootPos + 3) >= Canvas.GetLeft(lineEnemy.hitBox)) && ((shootPos + 3) <= Canvas.GetLeft(lineEnemy.hitBox) + lineEnemy.hitBox.Width))
+                    {
+                        //freeLine = false;
+                    }
+                }
+
+                if (minDist > Math.Abs(Canvas.GetLeft(tmpEnemy.hitBox) - Canvas.GetLeft(PlayerData.hitBox)) && freeLine)
+                {
+                    minDist = Math.Abs(Canvas.GetLeft(tmpEnemy.hitBox) - Canvas.GetLeft(PlayerData.hitBox));
+                    closestDr = enemyNumber;
+                }
+            }
+
+            //spawning enemy projectile
+            if (closestDr != -1)
+            {
+                Projectile newProjectile = new Projectile(16, 8, enemyList[closestDr].ProjectileSpeed, 1, 
+                    enemyList[closestDr].EnemyType, spritesheetBI, spritesheetData);
+
+                Canvas.SetLeft(newProjectile.hitBox, Canvas.GetLeft(enemyList[closestDr].hitBox) +
+                    (enemyList[closestDr].hitBox.Width - newProjectile.hitBox.Width) / 2);
+                Canvas.SetTop(newProjectile.hitBox, Canvas.GetTop(enemyList[closestDr].hitBox) - newProjectile.hitBox.Height);
+
+                mCanvas.Children.Add(newProjectile.hitBox);
+                projectileList.Add(newProjectile);
+            }
         }
 
         private void MoveEnemiesDown()
@@ -361,6 +424,12 @@ namespace CW_HLL2
                 if (tmp.EnemyType != EnemyTypeList.Overseer)
                     tmp.UpdateFrame(spritesheetData);
             }
+            foreach (Projectile tmp in projectileList)
+            {
+                if (!tmp.IsPlayerProjectile)
+                    tmp.UpdateFrame(spritesheetData);
+            }
+
         }
 
         private void showPause()

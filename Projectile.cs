@@ -101,6 +101,9 @@ namespace CW_HLL2
                 default:
                     break;
             }
+
+            SpriteImg.ImageSource = SpriteCrop;
+            hitBox.Fill = SpriteImg;
         }
 
         public Projectile(double hght, double wdth, int mSpeed, int projDamage, bool isPlrProj, ImageBrush projSkin)
