@@ -26,9 +26,10 @@ namespace CW_HLL2
         Plr PlayerData;
 
         bool enemyDirChange;
-        int enemyDescSpeed = 10;
+        //int enemyDescSpeed = 10;
+        int enemyDescSpeed = 1;
 
-        int zakosInWave = 8;
+        int dronesInWave = 8;
 
         List<bEnemy> enemyList;
 
@@ -37,7 +38,7 @@ namespace CW_HLL2
         int AnimUpdateTimer;
 
         bool movUp, movDown, movLeft, movRight;
-        const int zakoPts = 50;
+        const int dronePts = 50;
 
         bool onPause;
         //double SCREENWIDTH = 640;
@@ -64,7 +65,7 @@ namespace CW_HLL2
             GameStart();
 
             runTimer.Tick += GameTick;
-            runTimer.Interval = TimeSpan.FromMilliseconds(8);
+            runTimer.Interval = TimeSpan.FromMilliseconds(16);
             runTimer.Start();
 
             if (PlayerData.IsDead())
@@ -95,15 +96,19 @@ namespace CW_HLL2
 
         private void GameStart()
         {
-            PlayerData = new Plr(45, 45, 5, 8, 3, 0, plrSkin);
+            //PlayerData = new Plr(45, 45, 5, 8, 3, 0, plrSkin);
+            PlayerData = new Plr(45, 45, 5, 8, 3333, 0, plrSkin);
             enemyList = new List<bEnemy>();
             projectileList = new List<Projectile>();
 
             updateUI(PlayerData.Lives, PlayerData.Score);
 
             SpawnPlayer((mCanvas.Width - PlayerData.hitBox.Width) / 2, (mCanvas.Height - PlayerData.hitBox.Height) / 2);
-            SpawnDroneWave(50);
-            SpawnDroneWave(40 - 30);
+            //SPAWN FROM DOWN TO TOP
+            SpawnDroneWave(130, EnemyTypeList.Drone);
+            SpawnDroneWave(95, EnemyTypeList.Drone);
+            SpawnDroneWave(60, EnemyTypeList.Alien);
+            SpawnDroneWave(25, EnemyTypeList.Enforcer);
         }
 
         private void GameTick(object sender, EventArgs e)
@@ -115,8 +120,13 @@ namespace CW_HLL2
             else if (!PlayerData.IsDead())
             {
                 ++AnimUpdateTimer;
-                if (AnimUpdateTimer == 40)
+                if (AnimUpdateTimer == 60)
+                {
                     AnimUpdateTimer = 0;
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                }
 
                 HandlePlayerInput(PlayerData.MovSpeed);
                 MoveEnemies();
@@ -125,7 +135,7 @@ namespace CW_HLL2
                 gcHitBoxes();
                 gcEnemies();
                 gcProjectiles();
-                if (AnimUpdateTimer == 0)
+                if (AnimUpdateTimer % 20 == 0)
                 {
                     AnimUpdate();
                     EnemyShoot();
@@ -194,11 +204,14 @@ namespace CW_HLL2
             {
                 if(prj.IsPlayerProjectile)
                 {
-                    Canvas.SetTop(prj.hitBox, Canvas.GetTop(prj.hitBox) - PlayerData.ProjectileSpeed);
+                    Canvas.SetTop(prj.hitBox, Canvas.GetTop(prj.hitBox) - prj.MovSpeed);
                     Rect plrPrjHitbox = new Rect(Canvas.GetLeft(prj.hitBox), Canvas.GetTop(prj.hitBox), prj.hitBox.Width, prj.hitBox.Height);
 
-                    if (Canvas.GetTop(prj.hitBox) <= -PlayerData.ProjectileSpeed)
-                        hitBoxGC.Add(prj.hitBox);
+                    if (Canvas.GetTop(prj.hitBox) <= -prj.MovSpeed)
+                    {
+                        prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
+                        //hitBoxGC.Add(prj.hitBox);
+                    }
                     else
                     {
                         foreach (bEnemy enemy in enemyList)
@@ -215,27 +228,32 @@ namespace CW_HLL2
                                 {
                                     if ((string)enemy.hitBox.Tag == "Drone")
                                     {
-                                        PlayerData.AddScore(zakoPts);
+                                        PlayerData.AddScore(dronePts);
                                     }
                                     PlayerData.EffectiveShots++;
-                                    hitBoxGC.Add(enemy.hitBox);
-                                    enemyGC.Add(enemy);
+
+                                    enemy.RemoveEnemy(ref hitBoxGC, ref enemyGC);
+                                    //hitBoxGC.Add(enemy.hitBox);
+                                    //enemyGC.Add(enemy);
                                 }
 
-                                hitBoxGC.Add(prj.hitBox);
-                                projectileGC.Add(prj);
+                                prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
+                                //hitBoxGC.Add(prj.hitBox);
+                                //projectileGC.Add(prj);
                             }
                         }
                     }
                 }
                 else    //if it's an enemy projectile
                 {
-                    //!!!!!!!!!CHANGE SPEED TO ENEMIES PROJECTILE SPEED!!!!!!!!!
-                    Canvas.SetTop(prj.hitBox, Canvas.GetTop(prj.hitBox) + PlayerData.ProjectileSpeed);
+                    Canvas.SetTop(prj.hitBox, Canvas.GetTop(prj.hitBox) + prj.MovSpeed);
                     Rect enemyPrjHitbox = new Rect(Canvas.GetLeft(prj.hitBox), Canvas.GetTop(prj.hitBox), prj.hitBox.Width, prj.hitBox.Height);
 
                     if (Canvas.GetTop(prj.hitBox) >= mCanvas.Height + PlayerData.ProjectileSpeed)
-                        hitBoxGC.Add(prj.hitBox);
+                    {
+                        prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
+                        //hitBoxGC.Add(prj.hitBox);
+                    }
                     else
                     {
                         Rect playerHitbox = new Rect(Canvas.GetLeft(PlayerData.hitBox), Canvas.GetTop(PlayerData.hitBox), PlayerData.hitBox.Width, PlayerData.hitBox.Height);
@@ -243,8 +261,9 @@ namespace CW_HLL2
                         if (enemyPrjHitbox.IntersectsWith(playerHitbox))
                         {
                             PlayerData.RemoveLife();
-                            hitBoxGC.Add(prj.hitBox);
-                            projectileGC.Add(prj);
+                            prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
+                            //hitBoxGC.Add(prj.hitBox);
+                            //projectileGC.Add(prj);
                         }
                     }
                 }
@@ -260,8 +279,10 @@ namespace CW_HLL2
                 if (plrHitbox.IntersectsWith(enemyHitbox))
                 {
                     PlayerData.RemoveLife();
-                    hitBoxGC.Add(enemy.hitBox);
-                    enemyGC.Add(enemy);
+
+                    enemy.RemoveEnemy(ref hitBoxGC, ref enemyGC);
+                    //hitBoxGC.Add(enemy.hitBox);
+                    //enemyGC.Add(enemy);
                 }
             }
         }
@@ -298,22 +319,32 @@ namespace CW_HLL2
         private void EnemyShoot()
         {
             int closestDr = -1;
-            //double minDist = Double.MaxValue;
-            double minDist = 100000;
-            double shootPos = 0;
+            double minDist = Double.MaxValue;
+            //double minDist = 100000;
+            double shootPosX, shootPosY;
             int enemyNumber = -1;
             bool freeLine = true;
 
             foreach (bEnemy tmpEnemy in enemyList)
             {
                 ++enemyNumber;
+                shootPosX = Canvas.GetLeft(tmpEnemy.hitBox) + (tmpEnemy.hitBox.Width / 2) - 3;
+                shootPosY = Canvas.GetTop(tmpEnemy.hitBox) + tmpEnemy.hitBox.Height;
+
                 freeLine = true;
-                shootPos = Canvas.GetLeft(tmpEnemy.hitBox) + (tmpEnemy.hitBox.Width / 2) - 3;
 
                 foreach (bEnemy lineEnemy in enemyList)
                 {
-                    if ((shootPos >= Canvas.GetLeft(lineEnemy.hitBox)) && (shootPos <= Canvas.GetLeft(lineEnemy.hitBox) + lineEnemy.hitBox.Width) ||
-                        ((shootPos + 3) >= Canvas.GetLeft(lineEnemy.hitBox)) && ((shootPos + 3) <= Canvas.GetLeft(lineEnemy.hitBox) + lineEnemy.hitBox.Width))
+
+                    if(shootPosY < Canvas.GetTop(lineEnemy.hitBox))
+                    {
+                        if ((shootPosX >= Canvas.GetLeft(lineEnemy.hitBox)) && (shootPosX <= Canvas.GetLeft(lineEnemy.hitBox) + lineEnemy.hitBox.Width) ||
+                            ((shootPosX + 3) >= Canvas.GetLeft(lineEnemy.hitBox)) && ((shootPosX + 3) <= Canvas.GetLeft(lineEnemy.hitBox) + lineEnemy.hitBox.Width))
+                        {
+                            freeLine = false;
+                        }
+                    }
+                    else
                     {
                         //freeLine = false;
                     }
@@ -329,12 +360,16 @@ namespace CW_HLL2
             //spawning enemy projectile
             if (closestDr != -1)
             {
-                Projectile newProjectile = new Projectile(16, 8, enemyList[closestDr].ProjectileSpeed, 1, 
+                Projectile newProjectile = new Projectile(16, 8, enemyList[closestDr].ProjectileSpeed, 1,
                     enemyList[closestDr].EnemyType, spritesheetBI, spritesheetData);
 
                 Canvas.SetLeft(newProjectile.hitBox, Canvas.GetLeft(enemyList[closestDr].hitBox) +
                     (enemyList[closestDr].hitBox.Width - newProjectile.hitBox.Width) / 2);
-                Canvas.SetTop(newProjectile.hitBox, Canvas.GetTop(enemyList[closestDr].hitBox) - newProjectile.hitBox.Height);
+                Canvas.SetTop(newProjectile.hitBox, Canvas.GetTop(enemyList[closestDr].hitBox) + enemyList[closestDr].hitBox.Height
+                    - newProjectile.hitBox.Height);
+
+                //EnemyLightUp
+                enemyList[closestDr].hitBox.Fill = Brushes.Red;
 
                 mCanvas.Children.Add(newProjectile.hitBox);
                 projectileList.Add(newProjectile);
@@ -382,9 +417,9 @@ namespace CW_HLL2
             mCanvas.Children.Add(PlayerData.hitBox);
         }
 
-        private void SpawnDrone(double x, double y)
+        private void SpawnEnemy(double x, double y, EnemyTypeList enType)
         {
-            bEnemy newDrone = new bEnemy(30, 30, 2, 2, 1, EnemyTypeList.Drone, spritesheetBI, spritesheetData);
+            bEnemy newDrone = new bEnemy(30, 30, 2, 2, 1, enType, spritesheetBI, spritesheetData);
 
             Canvas.SetLeft(newDrone.hitBox, x);
             Canvas.SetTop(newDrone.hitBox, y);
@@ -392,11 +427,11 @@ namespace CW_HLL2
             enemyList.Add(newDrone);
         }
 
-        private void SpawnDroneWave(double y)
+        private void SpawnDroneWave(double y, EnemyTypeList enType)
         {
-            for (int i = 0; i < zakosInWave; i++)
+            for (int i = 0; i < dronesInWave; i++)
             {
-                SpawnDrone((double)i * (30 + 15) + 10, y);
+                SpawnEnemy((double)i * (30 + 15) + 10, y, enType);
             }
         }
 
@@ -439,20 +474,56 @@ namespace CW_HLL2
 
         private void gcHitBoxes()
         {
+            List<Rectangle> toRemove = new List<Rectangle>();
+
             foreach (var tmp in hitBoxGC)
+            {
                 mCanvas.Children.Remove(tmp);
+                toRemove.Add(tmp);
+            }
+
+            foreach (var tmp in toRemove)
+            {
+                hitBoxGC.Remove(tmp);
+            }
+
+            toRemove.Clear();
         }
 
         private void gcEnemies()
         {
+            List<bEnemy> toRemove = new List<bEnemy>();
+            
             foreach (var tmp in enemyGC)
+            {
                 enemyList.Remove(tmp);
+                toRemove.Add(tmp);
+            }
+
+            foreach (var tmp in toRemove)
+            {
+                enemyGC.Remove(tmp);
+            }
+
+            toRemove.Clear();
         }
 
         private void gcProjectiles()
         {
+            List<Projectile> toRemove = new List<Projectile>();
+            
             foreach (var tmp in projectileGC)
+            {
                 projectileList.Remove(tmp);
+                toRemove.Add(tmp);
+            }
+
+            foreach (var tmp in toRemove)
+            {
+                projectileGC.Remove(tmp);
+            }
+
+            toRemove.Clear();
         }
     }
 }

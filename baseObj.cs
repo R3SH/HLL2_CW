@@ -44,5 +44,10 @@ namespace CW_HLL2
                 Fill = Brushes.White
             };
         }
+
+        ~baseObj()
+        {
+
+        }
     }
 }

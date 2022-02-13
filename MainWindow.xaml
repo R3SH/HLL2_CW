@@ -13,7 +13,7 @@
         >
 
     <Border BorderBrush="White" BorderThickness="5">
-        <Canvas Name="mCanvas" ClipToBounds ="True" Height="640" Width="480" Focusable="True" Background="Black" KeyDown="KeyIsDown" KeyUp="KeyIsUp">
+        <Canvas Name="mCanvas" ClipToBounds ="True" Height="720" Width="480" Focusable="True" Background="Black" KeyDown="KeyIsDown" KeyUp="KeyIsUp">
             <Label Name="scoreTxt" Content="SCORE:" FontSize="14" FontWeight="Bold" Foreground="Red" Canvas.Left="58" HorizontalAlignment="Stretch"/>
             <Label Name="scoreData" Content="" FontSize="14" FontWeight="Bold" Foreground="White" Canvas.Left="82" Canvas.Top="23"/>
             <Label Name="highscoreTxt" Content="HIGHSCORE:" FontSize="14" FontWeight="Bold" Canvas.Right="0" Foreground="Red" Canvas.Left="273"/>

@@ -47,26 +47,6 @@ namespace CW_HLL2
             }
         }
 
-        //private int _numberOfFrames;
-        //public int NumberOfFrames
-        //{
-        //    get
-        //    {
-        //        return _numberOfFrames;
-        //    }
-        //    set
-        //    {
-        //        if (value <= 0)
-        //        {
-        //            _numberOfFrames = 1;
-        //        }
-        //        else
-        //        {
-        //            _numberOfFrames = value;
-        //        }
-        //    }
-        //}
-
         public int CurrentFrame
         {
             get
@@ -90,7 +70,7 @@ namespace CW_HLL2
 
         ImageBrush SpriteImg;
         BitmapSource SpritesheetBISrc;
-        CroppedBitmap SpriteCrop;
+        CroppedBitmap[] SpriteCrop;
 
         public bEnemy(double hght, double wdth, int mSpeed, int projSpeed)
             : base(hght, wdth, mSpeed, projSpeed)
@@ -122,15 +102,29 @@ namespace CW_HLL2
             {
                 case EnemyTypeList.Drone:
                     hitBox.Tag = "Drone";
-                    SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.DroneSprites[0]);
+                    SpriteCrop = new CroppedBitmap[ssData.DroneNumbSprites];
+                    for (int i = 0; i < ssData.DroneNumbSprites; ++i)
+                    {
+                        SpriteCrop[i] = new CroppedBitmap(SpritesheetBISrc, ssData.DroneSprites[i]);
+                    }
                     break;
                 case EnemyTypeList.Alien:
                     hitBox.Tag = "Alien";
-                    SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.AlienSprites[0]);
+                    //SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.AlienSprites[0]);
+                    SpriteCrop = new CroppedBitmap[ssData.AlienNumbSprites];
+                    for (int i = 0; i < ssData.AlienNumbSprites; ++i)
+                    {
+                        SpriteCrop[i] = new CroppedBitmap(SpritesheetBISrc, ssData.AlienSprites[i]);
+                    }
                     break;
                 case EnemyTypeList.Enforcer:
                     hitBox.Tag = "Enforcer";
-                    SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.EnforcerSprites[0]);
+                    //SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.EnforcerSprites[0]);
+                    SpriteCrop = new CroppedBitmap[ssData.EnforcerNumbSprites];
+                    for (int i = 0; i < ssData.EnforcerNumbSprites; ++i)
+                    {
+                        SpriteCrop[i] = new CroppedBitmap(SpritesheetBISrc, ssData.EnforcerSprites[i]);
+                    }
                     break;
                 case EnemyTypeList.Overseer:
                     hitBox.Tag = "Overseer";
@@ -140,8 +134,13 @@ namespace CW_HLL2
                     break;
             }
 
-            SpriteImg.ImageSource = SpriteCrop;
+            SpriteImg.ImageSource = SpriteCrop[0];
             hitBox.Fill = SpriteImg;
+        }
+
+        ~bEnemy()
+        {
+            //do smth
         }
 
         public bool IsMovingLeft()
@@ -163,17 +162,17 @@ namespace CW_HLL2
                 case EnemyTypeList.Drone:
                     if (_currentFrame >= ssData.DroneNumbSprites)
                         _currentFrame = 0;
-                    SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.DroneSprites[_currentFrame]);
+                    //SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.DroneSprites[_currentFrame]);
                     break;
                 case EnemyTypeList.Alien:
                     if (_currentFrame >= ssData.AlienNumbSprites)
                         _currentFrame = 0;
-                    SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.AlienSprites[_currentFrame]);
+                    //SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.AlienSprites[_currentFrame]);
                     break;
                 case EnemyTypeList.Enforcer:
                     if (_currentFrame >= ssData.EnforcerNumbSprites)
                         _currentFrame = 0;
-                    SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.EnforcerSprites[_currentFrame]);
+                    //SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.EnforcerSprites[_currentFrame]);
                     break;
                 case EnemyTypeList.Overseer:
                     //if (_currentFrame >= ssData.Ov)
@@ -184,8 +183,14 @@ namespace CW_HLL2
                     break;
             }
 
-            SpriteImg.ImageSource = SpriteCrop;
+            SpriteImg.ImageSource = SpriteCrop[_currentFrame];
             hitBox.Fill = SpriteImg;
+        }
+
+        public void RemoveEnemy(ref List<Rectangle> enemyGC, ref List<bEnemy> enemyList)
+        {
+            enemyGC.Add(this.hitBox);
+            enemyList.Add(this);
         }
     }
 }

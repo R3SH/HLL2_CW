@@ -63,7 +63,7 @@ namespace CW_HLL2
 
         ImageBrush SpriteImg;
         BitmapSource SpritesheetBISrc;
-        CroppedBitmap SpriteCrop;
+        CroppedBitmap[] SpriteCrop;
 
         public Projectile(double hght, double wdth, int mSpeed)
             : base(hght, wdth, mSpeed)
@@ -88,21 +88,38 @@ namespace CW_HLL2
             {
                 case EnemyTypeList.Drone:
                     hitBox.Tag = "DrProjectile";
-                    SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.DrProjectileSprites[0]);
+                    //SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.DrProjectileSprites[0]);
+                    SpriteCrop = new CroppedBitmap[ssData.DrProjectileNumbSprites];
+                    for (int i = 0; i < ssData.DrProjectileNumbSprites; ++i)
+                    {
+                        SpriteCrop[i] = new CroppedBitmap(SpritesheetBISrc, ssData.DrProjectileSprites[i]);
+                    }
                     break;
                 case EnemyTypeList.Alien:
                     hitBox.Tag = "AlProjectile";
-                    SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.AlProjectileSprites[0]);
+                    //SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.AlProjectileSprites[0]);
+                    SpriteCrop = new CroppedBitmap[ssData.AlProjectileNumbSprites];
+                    for (int i = 0; i < ssData.AlProjectileNumbSprites; ++i)
+                    {
+                        SpriteCrop[i] = new CroppedBitmap(SpritesheetBISrc, ssData.AlProjectileSprites[i]);
+                    }
                     break;
                 case EnemyTypeList.Enforcer:
                     hitBox.Tag = "EnforProjectile";
-                    SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.EnforProjectileSprites[0]);
+                    //SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.EnforProjectileSprites[0]);
+                    SpriteCrop = new CroppedBitmap[ssData.EnforProjectileNumbSprites];
+                    for (int i = 0; i < ssData.EnforProjectileNumbSprites; ++i)
+                    {
+                        SpriteCrop[i] = new CroppedBitmap(SpritesheetBISrc, ssData.EnforProjectileSprites[i]);
+                    }
                     break;
                 default:
+                    hitBox.Tag = "UndefinedProjectile";
+                    hitBox.Fill = Brushes.Red;
                     break;
             }
 
-            SpriteImg.ImageSource = SpriteCrop;
+            SpriteImg.ImageSource = SpriteCrop[0];
             hitBox.Fill = SpriteImg;
         }
 
@@ -116,6 +133,11 @@ namespace CW_HLL2
             hitBox.Fill = projSkin;
         }
 
+        ~Projectile()
+        {
+
+        }
+
         public void UpdateFrame(SpritesheetData ssData)
         {
             ++_currentFrame;
@@ -123,26 +145,32 @@ namespace CW_HLL2
             switch (EnemyType)
             {
                 case EnemyTypeList.Drone:
-                    if (_currentFrame >= ssData.DroneNumbSprites)
+                    if (_currentFrame >= ssData.DrProjectileNumbSprites)
                         _currentFrame = 0;
-                    SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.DrProjectileSprites[_currentFrame]);
+                    //SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.DrProjectileSprites[_currentFrame]);
                     break;
                 case EnemyTypeList.Alien:
-                    if (_currentFrame >= ssData.AlienNumbSprites)
+                    if (_currentFrame >= ssData.AlProjectileNumbSprites)
                         _currentFrame = 0;
-                    SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.AlProjectileSprites[_currentFrame]);
+                    //SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.AlProjectileSprites[_currentFrame]);
                     break;
                 case EnemyTypeList.Enforcer:
-                    if (_currentFrame >= ssData.EnforcerNumbSprites)
+                    if (_currentFrame >= ssData.EnforProjectileNumbSprites)
                         _currentFrame = 0;
-                    SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.EnforProjectileSprites[_currentFrame]);
+                    //SpriteCrop = new CroppedBitmap(SpritesheetBISrc, ssData.EnforProjectileSprites[_currentFrame]);
                     break;
                 default:
                     break;
             }
 
-            SpriteImg.ImageSource = SpriteCrop;
+            SpriteImg.ImageSource = SpriteCrop[_currentFrame];
             hitBox.Fill = SpriteImg;
+        }
+
+        public void RemoveProjectile(ref List<Rectangle> projectileGC, ref List<Projectile> projectileList)
+        {
+            projectileGC.Add(this.hitBox);
+            projectileList.Add(this);
         }
     }
 }

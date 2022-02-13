@@ -82,5 +82,10 @@ namespace CW_HLL2
                 Fill = Brushes.Red
             };
         }
+
+        ~Entity()
+        {
+
+        }
     }
 }

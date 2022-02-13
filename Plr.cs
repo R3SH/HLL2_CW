@@ -107,6 +107,11 @@ namespace CW_HLL2
             _shotsFired = 0;
         }
 
+        ~Plr()
+        {
+
+        }
+
         public void AddLife()
         {
             _lives++;
@@ -124,7 +129,7 @@ namespace CW_HLL2
 
         public bool IsDead()
         {
-            if (_lives < 0)
+            if (_lives <= 0)
                 return true;
             else
                 return false;
