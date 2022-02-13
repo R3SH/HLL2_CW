@@ -31,9 +31,9 @@ namespace CW_HLL2
 
         int dronesInWave = 8;
 
-        List<bEnemy> enemyList;
-
+        List<Barrier> barrierList;
         List<Projectile> projectileList;
+        List<bEnemy> enemyList;
 
         int AnimUpdateTimer;
 
@@ -47,6 +47,7 @@ namespace CW_HLL2
         //Rectangle Player;
 
         List<Rectangle> hitBoxGC;
+        List<Barrier> barrierGC;
         List<bEnemy> enemyGC;
         List<Projectile> projectileGC;
 
@@ -80,6 +81,7 @@ namespace CW_HLL2
             mCanvas.Focus();
 
             hitBoxGC = new List<Rectangle>();
+            barrierGC = new List<Barrier>();
             enemyGC = new List<bEnemy>();
             projectileGC = new List<Projectile>();
 
@@ -98,13 +100,15 @@ namespace CW_HLL2
         {
             //PlayerData = new Plr(45, 45, 5, 8, 3, 0, plrSkin);
             PlayerData = new Plr(45, 45, 5, 8, 3333, 0, plrSkin);
-            enemyList = new List<bEnemy>();
+            barrierList = new List<Barrier>();
             projectileList = new List<Projectile>();
+            enemyList = new List<bEnemy>();
 
             updateUI(PlayerData.Lives, PlayerData.Score);
 
-            SpawnPlayer((mCanvas.Width - PlayerData.hitBox.Width) / 2, (mCanvas.Height - PlayerData.hitBox.Height) / 2);
+            SpawnPlayer((mCanvas.Width - PlayerData.hitBox.Width) / 2, mCanvas.Height - PlayerData.hitBox.Height);
             //SPAWN FROM DOWN TO TOP
+            SpawnBarrierWall(4, 600, 9);
             SpawnDroneWave(130, EnemyTypeList.Drone);
             SpawnDroneWave(95, EnemyTypeList.Drone);
             SpawnDroneWave(60, EnemyTypeList.Alien);
@@ -133,8 +137,9 @@ namespace CW_HLL2
                 CollisionCheck();
                 updateUI(PlayerData.Lives, PlayerData.Score);
                 gcHitBoxes();
-                gcEnemies();
                 gcProjectiles();
+                gcBarriers();
+                gcEnemies();
                 if (AnimUpdateTimer % 20 == 0)
                 {
                     AnimUpdate();
@@ -192,8 +197,11 @@ namespace CW_HLL2
             }
             if(e.Key == Key.Space)
             {
-                SpawnPlayerProjectile();
-                PlayerData.ShotsFired++;
+                if (!onPause)
+                {
+                    SpawnPlayerProjectile();
+                    PlayerData.ShotsFired++;
+                }
             }
         }
 
@@ -238,8 +246,21 @@ namespace CW_HLL2
                                 }
 
                                 prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
-                                //hitBoxGC.Add(prj.hitBox);
-                                //projectileGC.Add(prj);
+                            }
+                        }
+
+                        foreach (Barrier tmpBar in barrierList)
+                        {
+                            Rect barrierHitBox = new Rect(Canvas.GetLeft(tmpBar.hitBox), Canvas.GetTop(tmpBar.hitBox), tmpBar.hitBox.Width, tmpBar.hitBox.Height);
+
+                            if (plrPrjHitbox.IntersectsWith(barrierHitBox))
+                            {
+                                tmpBar.Hit(prj.Damage, spritesheetData);
+                                if (tmpBar.Health == 0)
+                                {
+                                     tmpBar.RemoveBarrier(ref hitBoxGC, ref barrierGC);
+                                }
+                                prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
                             }
                         }
                     }
@@ -252,7 +273,6 @@ namespace CW_HLL2
                     if (Canvas.GetTop(prj.hitBox) >= mCanvas.Height + PlayerData.ProjectileSpeed)
                     {
                         prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
-                        //hitBoxGC.Add(prj.hitBox);
                     }
                     else
                     {
@@ -262,8 +282,21 @@ namespace CW_HLL2
                         {
                             PlayerData.RemoveLife();
                             prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
-                            //hitBoxGC.Add(prj.hitBox);
-                            //projectileGC.Add(prj);
+                        }
+
+                        foreach (Barrier tmpBar in barrierList)
+                        {
+                            Rect barrierHitBox = new Rect(Canvas.GetLeft(tmpBar.hitBox), Canvas.GetTop(tmpBar.hitBox), tmpBar.hitBox.Width, tmpBar.hitBox.Height);
+                            
+                            if (enemyPrjHitbox.IntersectsWith(barrierHitBox))
+                            {
+                                tmpBar.Hit(prj.Damage, spritesheetData);
+                                if (tmpBar.Health == 0)
+                                {
+                                    tmpBar.RemoveBarrier(ref hitBoxGC, ref barrierGC);
+                                }
+                                prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
+                            }
                         }
                     }
                 }
@@ -385,11 +418,6 @@ namespace CW_HLL2
             }
         }
 
-        private void EnemiesDive()
-        {
-            //TODO: Implement diving (by Bezier curves?)
-        }
-
         private void HandlePlayerInput(int plrSpeed)
         {
             if (movLeft && Canvas.GetLeft(PlayerData.hitBox) > 0)
@@ -417,24 +445,16 @@ namespace CW_HLL2
             mCanvas.Children.Add(PlayerData.hitBox);
         }
 
-        private void SpawnEnemy(double x, double y, EnemyTypeList enType)
+        private void SpawnBarrier(double x, double y, int barHealth)
         {
-            bEnemy newDrone = new bEnemy(30, 30, 2, 2, 1, enType, spritesheetBI, spritesheetData);
+            Barrier newBarrier = new Barrier(48, 66, barHealth, spritesheetBI, spritesheetData);
 
-            Canvas.SetLeft(newDrone.hitBox, x);
-            Canvas.SetTop(newDrone.hitBox, y);
-            mCanvas.Children.Add(newDrone.hitBox);
-            enemyList.Add(newDrone);
+            Canvas.SetLeft(newBarrier.hitBox, x);
+            Canvas.SetTop(newBarrier.hitBox, y);
+            mCanvas.Children.Add(newBarrier.hitBox);
+            barrierList.Add(newBarrier);
         }
-
-        private void SpawnDroneWave(double y, EnemyTypeList enType)
-        {
-            for (int i = 0; i < dronesInWave; i++)
-            {
-                SpawnEnemy((double)i * (30 + 15) + 10, y, enType);
-            }
-        }
-
+        
         private void SpawnPlayerProjectile()
         {
             Projectile newProjectile = new Projectile(16, 8, PlayerData.ProjectileSpeed, 1, true, plrProjectile);
@@ -445,6 +465,38 @@ namespace CW_HLL2
             mCanvas.Children.Add(newProjectile.hitBox);
             projectileList.Add(newProjectile);
         }
+
+        private void SpawnEnemy(double x, double y, EnemyTypeList enType)
+        {
+            bEnemy newDrone = new bEnemy(30, 30, 2, 2, 1, enType, spritesheetBI, spritesheetData);
+
+            Canvas.SetLeft(newDrone.hitBox, x);
+            Canvas.SetTop(newDrone.hitBox, y);
+            mCanvas.Children.Add(newDrone.hitBox);
+            enemyList.Add(newDrone);
+        }
+
+        private void SpawnBarrierWall(int barrierNumb, double y, int barrierHealth)
+        {
+            //double xOffset = mCanvas.Width / barrierNumb - 20;
+            double xOffset = (mCanvas.Width - (barrierNumb * 66)) / (barrierNumb + 1);
+
+            for (int i = 0; i < barrierNumb; i++)
+            {
+                //SpawnBarrier((double)i * (48 + 15), y, barrierHealth);
+                //SpawnBarrier((double)(i+1) * xOffset + (66 * i), y, barrierHealth);       //FIX
+                SpawnBarrier(xOffset * (i+1) + (66*i), y, barrierHealth);       //FIX
+            }
+        }
+
+        private void SpawnDroneWave(double y, EnemyTypeList enType)
+        {
+            for (int i = 0; i < dronesInWave; i++)
+            {
+                SpawnEnemy((double)i * (30 + 15) + 10, y, enType);
+            }
+        }
+
 
         private void updateUI(int plrLives, int plrScore)
         {
@@ -490,6 +542,42 @@ namespace CW_HLL2
             toRemove.Clear();
         }
 
+        private void gcProjectiles()
+        {
+            List<Projectile> toRemove = new List<Projectile>();
+            
+            foreach (var tmp in projectileGC)
+            {
+                projectileList.Remove(tmp);
+                toRemove.Add(tmp);
+            }
+
+            foreach (var tmp in toRemove)
+            {
+                projectileGC.Remove(tmp);
+            }
+
+            toRemove.Clear();
+        }
+
+        private void gcBarriers()
+        {
+            List<Barrier> toRemove = new List<Barrier>();
+
+            foreach (var tmp in barrierGC)
+            {
+                barrierList.Remove(tmp);
+                toRemove.Add(tmp);
+            }
+
+            foreach (var tmp in toRemove)
+            {
+                barrierGC.Remove(tmp);
+            }
+
+            toRemove.Clear();
+        }
+
         private void gcEnemies()
         {
             List<bEnemy> toRemove = new List<bEnemy>();
@@ -508,22 +596,5 @@ namespace CW_HLL2
             toRemove.Clear();
         }
 
-        private void gcProjectiles()
-        {
-            List<Projectile> toRemove = new List<Projectile>();
-            
-            foreach (var tmp in projectileGC)
-            {
-                projectileList.Remove(tmp);
-                toRemove.Add(tmp);
-            }
-
-            foreach (var tmp in toRemove)
-            {
-                projectileGC.Remove(tmp);
-            }
-
-            toRemove.Clear();
-        }
     }
 }

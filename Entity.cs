@@ -17,36 +17,6 @@ namespace CW_HLL2
 {
     public abstract class Entity : baseObj
     {
-        //private double _height, _width;
-        //public double Height
-        //{
-        //    get
-        //    {
-        //        return _height;
-        //    }
-        //    set
-        //    {
-        //        if (value <= 0)
-        //            _height = 10;
-        //        else
-        //            _height = value;
-        //    }
-        //}
-        //public double Width
-        //{
-        //    get
-        //    {
-        //        return _width;
-        //    }
-        //    set
-        //    {
-        //        if (value <= 0)
-        //            _width = 10;
-        //        else
-        //            _width = value;
-        //    }
-        //}
-
         private int _projectileSpeed;
 
         public int ProjectileSpeed
