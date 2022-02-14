@@ -26,8 +26,6 @@ namespace CW_HLL2
         Plr PlayerData;
 
         bool enemyDirChange;
-        //int enemyDescSpeed = 10;
-        int enemyDescSpeed = 1;
 
         int dronesInWave = 8;
 
@@ -38,13 +36,10 @@ namespace CW_HLL2
         int AnimUpdateTimer;
 
         bool movUp, movDown, movLeft, movRight;
-        const int dronePts = 50;
 
         bool onPause;
-        //double SCREENWIDTH = 640;
-        //double SCREENHEIGHT = 960;
 
-        //Rectangle Player;
+        Game game;
 
         List<Rectangle> hitBoxGC;
         List<Barrier> barrierGC;
@@ -98,8 +93,10 @@ namespace CW_HLL2
 
         private void GameStart()
         {
-            //PlayerData = new Plr(45, 45, 5, 8, 3, 0, plrSkin);
+            game = new Game(2, 3, 4, 1, 2, 3, 10, 20, 30, 100);
+
             PlayerData = new Plr(45, 45, 5, 8, 3333, 0, plrSkin);
+
             barrierList = new List<Barrier>();
             projectileList = new List<Projectile>();
             enemyList = new List<bEnemy>();
@@ -109,27 +106,23 @@ namespace CW_HLL2
             SpawnPlayer((mCanvas.Width - PlayerData.hitBox.Width) / 2, mCanvas.Height - PlayerData.hitBox.Height);
             //SPAWN FROM DOWN TO TOP
             SpawnBarrierWall(4, 600, 9);
-            SpawnDroneWave(130, EnemyTypeList.Drone);
-            SpawnDroneWave(95, EnemyTypeList.Drone);
-            SpawnDroneWave(60, EnemyTypeList.Alien);
-            SpawnDroneWave(25, EnemyTypeList.Enforcer);
+            SpawnEnemyWave();
         }
 
         private void GameTick(object sender, EventArgs e)
         {
-            if (onPause)
+            if (game.OnPause)
             {
                 //show pause menu
             }
             else if (!PlayerData.IsDead())
             {
                 ++AnimUpdateTimer;
-                if (AnimUpdateTimer == 60)
+
+                if (enemyList.Count == 0)
                 {
-                    AnimUpdateTimer = 0;
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                    GC.Collect();
+                    game.EnemySpeed++;
+                    SpawnEnemyWave();
                 }
 
                 HandlePlayerInput(PlayerData.MovSpeed);
@@ -139,11 +132,19 @@ namespace CW_HLL2
                 gcHitBoxes();
                 gcProjectiles();
                 gcBarriers();
-                gcEnemies();
+                gcEnemies();             
+
                 if (AnimUpdateTimer % 20 == 0)
                 {
                     AnimUpdate();
+                }
+                if (AnimUpdateTimer == 60)
+                {
                     EnemyShoot();
+                    AnimUpdateTimer = 0;
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
                 }
             }
             else
@@ -156,7 +157,7 @@ namespace CW_HLL2
         {
             if (e.Key == Key.Escape)
             {
-                onPause = !onPause;
+                game.OnPause = !game.OnPause;
                 //Application.Current.Shutdown();
             }
             if(e.Key == Key.Left)
@@ -218,7 +219,6 @@ namespace CW_HLL2
                     if (Canvas.GetTop(prj.hitBox) <= -prj.MovSpeed)
                     {
                         prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
-                        //hitBoxGC.Add(prj.hitBox);
                     }
                     else
                     {
@@ -234,15 +234,25 @@ namespace CW_HLL2
                                 }
                                 else
                                 {
-                                    if ((string)enemy.hitBox.Tag == "Drone")
+                                    switch (enemy.EnemyType)
                                     {
-                                        PlayerData.AddScore(dronePts);
+                                        case EnemyTypeList.Drone:
+                                            PlayerData.AddScore(game.DronePts);
+                                            break;
+                                        case EnemyTypeList.Alien:
+                                            PlayerData.AddScore(game.AlienPts);
+                                            break;
+                                        case EnemyTypeList.Enforcer:
+                                            PlayerData.AddScore(game.EnforcerPts);
+                                            break;
+                                        case EnemyTypeList.Overseer:
+                                            PlayerData.AddScore(game.OverseerPts);
+                                            break;
                                     }
+
                                     PlayerData.EffectiveShots++;
 
                                     enemy.RemoveEnemy(ref hitBoxGC, ref enemyGC);
-                                    //hitBoxGC.Add(enemy.hitBox);
-                                    //enemyGC.Add(enemy);
                                 }
 
                                 prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
@@ -314,8 +324,6 @@ namespace CW_HLL2
                     PlayerData.RemoveLife();
 
                     enemy.RemoveEnemy(ref hitBoxGC, ref enemyGC);
-                    //hitBoxGC.Add(enemy.hitBox);
-                    //enemyGC.Add(enemy);
                 }
             }
         }
@@ -323,10 +331,16 @@ namespace CW_HLL2
         private void MoveEnemies()
         {
             enemyDirChange = false;
+            double maxY = 0;
 
-            //Direction check
+            //Direction check and y check
             foreach (bEnemy tmp in enemyList) if (!enemyDirChange)
             {
+                if (maxY < (Canvas.GetTop(tmp.hitBox) + tmp.hitBox.Height))
+                {
+                        maxY = Canvas.GetTop(tmp.hitBox) + tmp.hitBox.Height;
+                }
+
                 if (tmp.EnemyType != EnemyTypeList.Overseer && (((Canvas.GetLeft(tmp.hitBox) + tmp.hitBox.Width) >= (mCanvas.Width)) || (Canvas.GetLeft(tmp.hitBox) <= 5)))
                 {
                     enemyDirChange = true;
@@ -335,7 +349,10 @@ namespace CW_HLL2
                         ench.changeMovDir();
                     }
 
-                    MoveEnemiesDown();
+                    if (maxY < 500)
+                    {
+                        MoveEnemiesDown();
+                    }
                 }
             }
 
@@ -353,10 +370,9 @@ namespace CW_HLL2
         {
             int closestDr = -1;
             double minDist = Double.MaxValue;
-            //double minDist = 100000;
             double shootPosX, shootPosY;
             int enemyNumber = -1;
-            bool freeLine = true;
+            bool freeLine;
 
             foreach (bEnemy tmpEnemy in enemyList)
             {
@@ -414,7 +430,7 @@ namespace CW_HLL2
             foreach (bEnemy tmp in enemyList)
             {
                 if (tmp.EnemyType != EnemyTypeList.Overseer)
-                    Canvas.SetTop(tmp.hitBox, Canvas.GetTop(tmp.hitBox) + enemyDescSpeed);
+                    Canvas.SetTop(tmp.hitBox, Canvas.GetTop(tmp.hitBox) + game.EnemyDescendSpeed);
             }
         }
 
@@ -468,7 +484,7 @@ namespace CW_HLL2
 
         private void SpawnEnemy(double x, double y, EnemyTypeList enType)
         {
-            bEnemy newDrone = new bEnemy(30, 30, 2, 2, 1, enType, spritesheetBI, spritesheetData);
+            bEnemy newDrone = new bEnemy(30, 30, game.EnemySpeed, game.EnemyProjectileSpeed, 1, enType, spritesheetBI, spritesheetData);
 
             Canvas.SetLeft(newDrone.hitBox, x);
             Canvas.SetTop(newDrone.hitBox, y);
@@ -489,7 +505,7 @@ namespace CW_HLL2
             }
         }
 
-        private void SpawnDroneWave(double y, EnemyTypeList enType)
+        private void SpawnEnemyRow(double y, EnemyTypeList enType)
         {
             for (int i = 0; i < dronesInWave; i++)
             {
@@ -497,6 +513,16 @@ namespace CW_HLL2
             }
         }
 
+        private void SpawnEnemyWave()
+        {
+            //SPAWN FROM DOWN TO TOP
+            SpawnEnemyRow(235, EnemyTypeList.Drone);
+            SpawnEnemyRow(200, EnemyTypeList.Drone);
+            SpawnEnemyRow(165, EnemyTypeList.Alien);
+            SpawnEnemyRow(130, EnemyTypeList.Alien);
+            SpawnEnemyRow(95, EnemyTypeList.Enforcer);
+            SpawnEnemyRow(60, EnemyTypeList.Enforcer);
+        }
 
         private void updateUI(int plrLives, int plrScore)
         {
