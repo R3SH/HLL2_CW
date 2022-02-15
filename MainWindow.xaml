@@ -19,50 +19,24 @@
             <Label Name="highscoreTxt" Content="HIGHSCORE:" FontSize="14" FontWeight="Bold" Canvas.Right="0" Foreground="Red" Canvas.Left="273"/>
             <Label Name="highscoreData" Content="" FontSize="14" FontWeight="Bold" Foreground="White" Canvas.Left="315" Canvas.Top="23"/>
 
-            <!--<Path Stroke="White" StrokeThickness="1">
-                <Path.Data>
-                    <PathGeometry>
-                        <PathGeometry.Figures>
-                            <PathFigureCollection>
-                                <PathFigure StartPoint="10,300">
-                                    <PathFigure.Segments>
-                                        <PathSegmentCollection>
-                                            <PolyBezierSegment Points="0,0 200,0 300,100 300,0 400,0 600,100" />
-                                        </PathSegmentCollection>
-                                    </PathFigure.Segments>
-                                </PathFigure>
-                            </PathFigureCollection>
-                        </PathGeometry.Figures>
-                    </PathGeometry>
-                </Path.Data>
-            </Path>-->
+            <Border BorderBrush="Silver" BorderThickness="2" Width="400" Height="640" Canvas.Left="40" Canvas.Top="50" Name="pause" Panel.ZIndex="1">
+                <StackPanel Orientation="Vertical" Background="AliceBlue">
+                    <TextBlock FontWeight="Bold" FontSize="50" HorizontalAlignment="Center" Margin="0,20,0,0">Пауза</TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="20" FontSize="16"></TextBlock>
+                    <TextBlock FontWeight="Bold" HorizontalAlignment="Center" FontSize="20" Foreground="Maroon">Нажмите "Пробел" чтобы продолжить,</TextBlock>
+                    <TextBlock FontWeight="Bold" HorizontalAlignment="Center" FontSize="20" Foreground="Maroon">"Esc" чтобы выйти</TextBlock>
+                </StackPanel>
+            </Border>
 
-            <!--<Path Stroke="White" StrokeThickness="1">
-                <Path.Data>
-                    <PathGeometry>
-                        <PathGeometry.Figures>
-                            <PathFigureCollection>
-
-                                --><!-- The StartPoint specifies the starting point of the first curve. --><!--
-                                <PathFigure StartPoint="10,100">
-                                    <PathFigure.Segments>
-                                        <PathSegmentCollection>
-
-                                            --><!-- The PolyBezierSegment specifies two cubic Bezier curves.
-                           The first curve is from 10,100 (start point specified above)
-                           to 300,100 with a control point of 0,0 and another control
-                           point of 200,0. The second curve is from 300,100 
-                           (end of the last curve) to 600,100 with a control point of 300,0
-                           and another control point of 400,0. --><!--
-                                            <PolyBezierSegment Points="0,0 200,0 300,100 300,0 100,0 10,100" />
-                                        </PathSegmentCollection>
-                                    </PathFigure.Segments>
-                                </PathFigure>
-                            </PathFigureCollection>
-                        </PathGeometry.Figures>
-                    </PathGeometry>
-                </Path.Data>
-            </Path>-->
+            <Border BorderBrush="Silver" BorderThickness="2" Width="400" Height="640" Canvas.Left="40" Canvas.Top="50" Name="menu" Panel.ZIndex="1">
+                <StackPanel Orientation="Vertical" Background="AliceBlue">
+                    <TextBlock FontWeight="Bold" FontSize="50" HorizontalAlignment="Center" Margin="0,20,0,0">SnakeWPF</TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="20" FontSize="16">Use the Arrow keys to control the green snake. Make it eat the red apples, but be sure not to crash into the walls or the tail of the snake!</TextBlock>
+                    <TextBlock FontWeight="Bold" HorizontalAlignment="Center" FontSize="24" Foreground="Maroon">Press SPACE to start!</TextBlock>
+                    <Button Margin="20" Name="gameModeSwitch" Click="GameModeSwitch" HorizontalAlignment="Center" Padding="10,3">Normal Mode</Button>
+                    <Button Margin="20" Name="buttonShowScoreList" Click="ButtonShowScoreList" HorizontalAlignment="Center" Padding="10,3">Show High Score List...</Button>
+                </StackPanel>
+            </Border>
 
         </Canvas>
     </Border>

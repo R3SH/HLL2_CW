@@ -37,7 +37,7 @@ namespace CW_HLL2
 
         bool movUp, movDown, movLeft, movRight;
 
-        bool onPause;
+        bool OnStart, OnPause, HardMode;
 
         Game game;
 
@@ -58,29 +58,25 @@ namespace CW_HLL2
             InitializeComponent();
 
             GameInit();
-            GameStart();
 
             runTimer.Tick += GameTick;
             runTimer.Interval = TimeSpan.FromMilliseconds(16);
             runTimer.Start();
-
-            if (PlayerData.IsDead())
-            {
-                runTimer.Stop();
-                //add ask to play again or smth
-            }
         }
 
         private void GameInit()
         {
             mCanvas.Focus();
 
+            OnStart = true;
+            OnPause = false;
+
             hitBoxGC = new List<Rectangle>();
             barrierGC = new List<Barrier>();
             enemyGC = new List<bEnemy>();
             projectileGC = new List<Projectile>();
 
-            onPause = false;
+            pause.Visibility = Visibility.Collapsed;
 
             plrSkin.ImageSource = new BitmapImage(new Uri(Environment.CurrentDirectory + "/res/ship.png"));
             plrProjectile.ImageSource = new BitmapImage(new Uri(Environment.CurrentDirectory + "/res/projectiles/Shot4/shot4_5f.png"));
@@ -111,54 +107,66 @@ namespace CW_HLL2
 
         private void GameTick(object sender, EventArgs e)
         {
-            if (game.OnPause)
+            if (OnStart)
             {
-                //show pause menu
-            }
-            else if (!PlayerData.IsDead())
-            {
-                ++AnimUpdateTimer;
-
-                if (enemyList.Count == 0)
-                {
-                    game.EnemySpeed++;
-                    SpawnEnemyWave();
-                }
-
-                HandlePlayerInput(PlayerData.MovSpeed);
-                MoveEnemies();
-                CollisionCheck();
-                updateUI(PlayerData.Lives, PlayerData.Score);
-                gcHitBoxes();
-                gcProjectiles();
-                gcBarriers();
-                gcEnemies();             
-
-                if (AnimUpdateTimer % 20 == 0)
-                {
-                    AnimUpdate();
-                }
-                if (AnimUpdateTimer == 60)
-                {
-                    EnemyShoot();
-                    AnimUpdateTimer = 0;
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                    GC.Collect();
-                }
+                HandlePlayerInput(0);
             }
             else
             {
-                //Application.Current.Shutdown();
+                if (OnPause)
+                {
+                    //show pause menu
+                }
+                else if (!PlayerData.IsDead())
+                {
+                    ++AnimUpdateTimer;
+
+                    if (enemyList.Count == 0)
+                    {
+                        game.EnemySpeed++;
+                        SpawnEnemyWave();
+                    }
+
+                    HandlePlayerInput(PlayerData.MovSpeed);
+                    MoveEnemies();
+                    CollisionCheck();
+                    updateUI(PlayerData.Lives, PlayerData.Score);
+                    gcHitBoxes();
+                    gcProjectiles();
+                    gcBarriers();
+                    gcEnemies();             
+
+                    if (AnimUpdateTimer % 20 == 0)
+                    {
+                        AnimUpdate();
+                    }
+                    if (AnimUpdateTimer == 60)
+                    {
+                        EnemyShoot();
+                        AnimUpdateTimer = 0;
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                        GC.Collect();
+                    }
+                }
+                else
+                {
+                    //Application.Current.Shutdown();
+                }
+                
             }
+
         }
 
         private void KeyIsDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Escape)
             {
-                game.OnPause = !game.OnPause;
-                //Application.Current.Shutdown();
+                if (OnPause)
+                {
+                    Application.Current.Shutdown();
+                }
+                //game.OnPause = !game.OnPause;
             }
             if(e.Key == Key.Left)
             {
@@ -196,9 +204,28 @@ namespace CW_HLL2
             {
                 movDown = false;
             }
+            if (e.Key == Key.Escape)
+            {
+                if (!OnPause && !OnStart)
+                {
+                    OnPause = true;
+                    pause.Visibility = Visibility.Visible;
+                }
+            }
             if(e.Key == Key.Space)
             {
-                if (!onPause)
+                if (OnStart)
+                {
+                    OnStart = false;
+                    menu.Visibility = Visibility.Collapsed;
+                    GameStart();
+                }
+                else if(OnPause)
+                {
+                    OnPause = false;
+                    pause.Visibility = Visibility.Collapsed;
+                }
+                else
                 {
                     SpawnPlayerProjectile();
                     PlayerData.ShotsFired++;
@@ -622,5 +649,24 @@ namespace CW_HLL2
             toRemove.Clear();
         }
 
+        private void ButtonShowScoreList(object sender, RoutedEventArgs e)
+        {
+            menu.Visibility = Visibility.Collapsed;
+            //bdrHighscoreList.Visibility = Visibility.Visible;
+        }
+        
+        private void GameModeSwitch(object sender, RoutedEventArgs e)
+        {
+            HardMode = !HardMode;
+            //!!!!!!!!!Change lang!!!!!!!!!
+            if (HardMode)
+            {
+                gameModeSwitch.Content = "Hard Mode";
+            }
+            else
+            {
+                gameModeSwitch.Content = "Normal Mode";
+            }
+        }
     }
 }

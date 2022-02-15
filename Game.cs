@@ -6,7 +6,7 @@ namespace CW_HLL2
 {
     class Game
     {
-        public bool OnStart, OnPause, OnLeaderboard;
+        public bool OnLeaderboard;
 
 
         public int EnemySpeed, EnemyDescendSpeed, EnemyProjectileSpeed;
@@ -20,8 +20,6 @@ namespace CW_HLL2
         
         public Game(int enSpeed, int enDescSpeed, int enPrjSpeed, int drDmg, int alDmg, int enfDmg, int drPts, int alPts, int enfPts, int ovPts)
         {
-            OnStart = true;
-            OnPause = false;
             OnLeaderboard = false;
 
             EnemySpeed = enSpeed;
