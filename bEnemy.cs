@@ -78,7 +78,6 @@ namespace CW_HLL2
             hitBox.Tag = "baseEnemy";
             hitBox.Fill = Brushes.Yellow;
             _health = 1;
-            //_numberOfFrames = 1;
             _movingLeft = true;
             _currentFrame = 0;
         }
@@ -87,15 +86,12 @@ namespace CW_HLL2
             : base(hght, wdth, mSpeed, projSpeed)
         {
             hitBox.Tag = "baseEnemy";
-            //hitBox.Fill = enemySkin;
             Health = hp;
             _movingLeft = true;
             _currentFrame = 0;
-            //NumberOfFrames = frameN;
             EnemyType = type;
 
             SpriteImg = new ImageBrush();
-            //SpriteImg.Width = wdth;
             SpritesheetBISrc = spriteSheet;
 
             switch (EnemyType)

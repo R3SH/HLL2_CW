@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<ArrayOfHighScoreNode xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <HighScoreNode>
+    <PlayerName>IDKFA</PlayerName>
+    <Score>1730</Score>
+  </HighScoreNode>
+  <HighScoreNode>
+    <PlayerName>newOne</PlayerName>
+    <Score>330</Score>
+  </HighScoreNode>
+  <HighScoreNode>
+    <PlayerName>IDDQD</PlayerName>
+    <Score>1090</Score>
+  </HighScoreNode>
+  <HighScoreNode>
+    <PlayerName>NewRecrd</PlayerName>
+    <Score>490</Score>
+  </HighScoreNode>
+  <HighScoreNode>
+    <PlayerName>Test3</PlayerName>
+    <Score>320</Score>
+  </HighScoreNode>
+</ArrayOfHighScoreNode>

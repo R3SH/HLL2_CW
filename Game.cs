@@ -8,7 +8,6 @@ namespace CW_HLL2
     {
         public bool OnLeaderboard;
 
-
         public int EnemySpeed, EnemyDescendSpeed, EnemyProjectileSpeed;
         public int DroneDamage, AlienDamage, EnforcerDamage;
         public int DronePts, AlienPts, EnforcerPts, OverseerPts;

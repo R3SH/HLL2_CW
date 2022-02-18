@@ -14,6 +14,9 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 using System.IO;
+using System.Xml.Serialization;
+using System.Collections.ObjectModel;
+
 using System.Windows.Threading;
 
 namespace CW_HLL2
@@ -32,8 +35,12 @@ namespace CW_HLL2
         List<Barrier> barrierList;
         List<Projectile> projectileList;
         List<bEnemy> enemyList;
+        List<Explosion> explosionList;
 
-        int AnimUpdateTimer;
+        const int MaxHighscoreListEntryCount = 5;
+        const int shotDelay = 20;
+        int AnimUpdateTimer, plrShootDelay;
+        int CurrentHighScore = 0;
 
         bool movUp, movDown, movLeft, movRight;
 
@@ -45,6 +52,7 @@ namespace CW_HLL2
         List<Barrier> barrierGC;
         List<bEnemy> enemyGC;
         List<Projectile> projectileGC;
+        List<Explosion> explosionGC;
 
         DispatcherTimer runTimer = new DispatcherTimer();
         ImageBrush plrSkin = new ImageBrush();
@@ -52,6 +60,11 @@ namespace CW_HLL2
         ImageBrush zakoSprite = new ImageBrush();
         BitmapImage spritesheetBI = new BitmapImage();
         SpritesheetData spritesheetData;
+
+        public ObservableCollection<HighScoreNode> HighscoreList
+        {
+            get; set;
+        } = new ObservableCollection<HighScoreNode>();
 
         public MainWindow()
         {
@@ -71,12 +84,17 @@ namespace CW_HLL2
             OnStart = true;
             OnPause = false;
 
+            plrShootDelay = shotDelay;
+
             hitBoxGC = new List<Rectangle>();
             barrierGC = new List<Barrier>();
             enemyGC = new List<bEnemy>();
             projectileGC = new List<Projectile>();
+            explosionGC = new List<Explosion>();
 
             pause.Visibility = Visibility.Collapsed;
+            bdrNewHighscore.Visibility = Visibility.Collapsed;
+            playAgain.Visibility = Visibility.Collapsed;
 
             plrSkin.ImageSource = new BitmapImage(new Uri(Environment.CurrentDirectory + "/res/ship.png"));
             plrProjectile.ImageSource = new BitmapImage(new Uri(Environment.CurrentDirectory + "/res/projectiles/Shot4/shot4_5f.png"));
@@ -85,18 +103,48 @@ namespace CW_HLL2
             spritesheetBI.UriSource = new Uri(Environment.CurrentDirectory + "/res/spritesheet.png");
             spritesheetBI.EndInit();
             spritesheetData = new SpritesheetData();
+
+            LoadHighscoreList();
         }
 
         private void GameStart()
         {
+            runTimer.IsEnabled = true;
+
+            if (game != null)
+                game = null;
+
             game = new Game(2, 3, 4, 1, 2, 3, 10, 20, 30, 100);
 
-            PlayerData = new Plr(45, 45, 5, 8, 3333, 0, plrSkin);
+            if (HardMode)
+            {
+                PlayerData = new Plr(45, 45, 5, 8, 3, 0, plrSkin);
+                game.DronePts *= 3;
+                game.AlienPts *= 3;
+                game.EnforcerPts *= 3;
+            }
+            else
+            {
+                PlayerData = new Plr(45, 45, 5, 8, 9, 0, plrSkin);
+            }
+
+            if (barrierList != null)
+                barrierList.Clear();
+            if(projectileList != null)
+                projectileList.Clear();
+            if(enemyList != null)
+                enemyList.Clear();
+            if (explosionList != null)
+                explosionList.Clear();
+
+            ClearLists();
 
             barrierList = new List<Barrier>();
             projectileList = new List<Projectile>();
             enemyList = new List<bEnemy>();
+            explosionList = new List<Explosion>();
 
+            highscoreData.Content = CurrentHighScore;
             updateUI(PlayerData.Lives, PlayerData.Score);
 
             SpawnPlayer((mCanvas.Width - PlayerData.hitBox.Width) / 2, mCanvas.Height - PlayerData.hitBox.Height);
@@ -127,6 +175,7 @@ namespace CW_HLL2
                         SpawnEnemyWave();
                     }
 
+                    ShootDelay();
                     HandlePlayerInput(PlayerData.MovSpeed);
                     MoveEnemies();
                     CollisionCheck();
@@ -134,11 +183,17 @@ namespace CW_HLL2
                     gcHitBoxes();
                     gcProjectiles();
                     gcBarriers();
-                    gcEnemies();             
+                    gcEnemies();
+                    gcExplosions();
 
-                    if (AnimUpdateTimer % 20 == 0)
+                    if (AnimUpdateTimer % 10 == 0)
                     {
-                        AnimUpdate();
+                        if (AnimUpdateTimer % 20 == 0)
+                        {
+                            AnimUpdate();
+                        }
+
+                        ExplosionsUpdate();
                     }
                     if (AnimUpdateTimer == 60)
                     {
@@ -151,9 +206,13 @@ namespace CW_HLL2
                 }
                 else
                 {
+                    hitBoxGC.Add(PlayerData.hitBox);
+                    ClearLists();
+                    EndGame();
+                    //playAgain.Visibility = Visibility.Visible;
                     //Application.Current.Shutdown();
                 }
-                
+
             }
 
         }
@@ -168,7 +227,7 @@ namespace CW_HLL2
                 }
                 //game.OnPause = !game.OnPause;
             }
-            if(e.Key == Key.Left)
+            if (e.Key == Key.Left)
             {
                 movLeft = true;
             }
@@ -183,6 +242,15 @@ namespace CW_HLL2
             if (e.Key == Key.Down)
             {
                 movDown = true;
+            }
+            if (e.Key == Key.Space)
+            {
+                if (plrShootDelay == shotDelay)
+                {
+                    plrShootDelay = 0;
+                    SpawnPlayerProjectile();
+                    PlayerData.ShotsFired++;
+                }
             }
         }
 
@@ -212,7 +280,7 @@ namespace CW_HLL2
                     pause.Visibility = Visibility.Visible;
                 }
             }
-            if(e.Key == Key.Space)
+            if (e.Key == Key.Space)
             {
                 if (OnStart)
                 {
@@ -220,15 +288,19 @@ namespace CW_HLL2
                     menu.Visibility = Visibility.Collapsed;
                     GameStart();
                 }
-                else if(OnPause)
+                else if (OnPause)
                 {
                     OnPause = false;
                     pause.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
-                    SpawnPlayerProjectile();
-                    PlayerData.ShotsFired++;
+                    if (plrShootDelay == shotDelay)
+                    {
+                        plrShootDelay = 0;
+                        SpawnPlayerProjectile();
+                        PlayerData.ShotsFired++;
+                    }
                 }
             }
         }
@@ -236,9 +308,9 @@ namespace CW_HLL2
         private void CollisionCheck()
         {
             //Check Projectiles
-            foreach(Projectile prj in projectileList)
+            foreach (Projectile prj in projectileList)
             {
-                if(prj.IsPlayerProjectile)
+                if (prj.IsPlayerProjectile)
                 {
                     Canvas.SetTop(prj.hitBox, Canvas.GetTop(prj.hitBox) - prj.MovSpeed);
                     Rect plrPrjHitbox = new Rect(Canvas.GetLeft(prj.hitBox), Canvas.GetTop(prj.hitBox), prj.hitBox.Width, prj.hitBox.Height);
@@ -279,6 +351,7 @@ namespace CW_HLL2
 
                                     PlayerData.EffectiveShots++;
 
+                                    explosionList.Add(SpawnExplosion(Canvas.GetLeft(enemy.hitBox), Canvas.GetTop(enemy.hitBox), enemy.hitBox.Height, enemy.hitBox.Width));
                                     enemy.RemoveEnemy(ref hitBoxGC, ref enemyGC);
                                 }
 
@@ -295,7 +368,7 @@ namespace CW_HLL2
                                 tmpBar.Hit(prj.Damage, spritesheetData);
                                 if (tmpBar.Health == 0)
                                 {
-                                     tmpBar.RemoveBarrier(ref hitBoxGC, ref barrierGC);
+                                    tmpBar.RemoveBarrier(ref hitBoxGC, ref barrierGC);
                                 }
                                 prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
                             }
@@ -324,7 +397,7 @@ namespace CW_HLL2
                         foreach (Barrier tmpBar in barrierList)
                         {
                             Rect barrierHitBox = new Rect(Canvas.GetLeft(tmpBar.hitBox), Canvas.GetTop(tmpBar.hitBox), tmpBar.hitBox.Width, tmpBar.hitBox.Height);
-                            
+
                             if (enemyPrjHitbox.IntersectsWith(barrierHitBox))
                             {
                                 tmpBar.Hit(prj.Damage, spritesheetData);
@@ -339,20 +412,21 @@ namespace CW_HLL2
                 }
             }
 
+            //Redundant for current gameplay
             //Check player collision with enemies
-            Rect plrHitbox = new Rect(Canvas.GetLeft(PlayerData.hitBox), Canvas.GetTop(PlayerData.hitBox), PlayerData.hitBox.Width, PlayerData.hitBox.Height);
+            //Rect plrHitbox = new Rect(Canvas.GetLeft(PlayerData.hitBox), Canvas.GetTop(PlayerData.hitBox), PlayerData.hitBox.Width, PlayerData.hitBox.Height);
 
-            foreach (bEnemy enemy in enemyList)
-            {
-                Rect enemyHitbox = new Rect(Canvas.GetLeft(enemy.hitBox), Canvas.GetTop(enemy.hitBox), enemy.hitBox.Width, enemy.hitBox.Height);
+            //foreach (bEnemy enemy in enemyList)
+            //{
+            //    Rect enemyHitbox = new Rect(Canvas.GetLeft(enemy.hitBox), Canvas.GetTop(enemy.hitBox), enemy.hitBox.Width, enemy.hitBox.Height);
 
-                if (plrHitbox.IntersectsWith(enemyHitbox))
-                {
-                    PlayerData.RemoveLife();
+            //    if (plrHitbox.IntersectsWith(enemyHitbox))
+            //    {
+            //        PlayerData.RemoveLife();
 
-                    enemy.RemoveEnemy(ref hitBoxGC, ref enemyGC);
-                }
-            }
+            //        enemy.RemoveEnemy(ref hitBoxGC, ref enemyGC);
+            //    }
+            //}
         }
 
         private void MoveEnemies()
@@ -362,26 +436,26 @@ namespace CW_HLL2
 
             //Direction check and y check
             foreach (bEnemy tmp in enemyList) if (!enemyDirChange)
-            {
-                if (maxY < (Canvas.GetTop(tmp.hitBox) + tmp.hitBox.Height))
                 {
+                    if (maxY < (Canvas.GetTop(tmp.hitBox) + tmp.hitBox.Height))
+                    {
                         maxY = Canvas.GetTop(tmp.hitBox) + tmp.hitBox.Height;
-                }
-
-                if (tmp.EnemyType != EnemyTypeList.Overseer && (((Canvas.GetLeft(tmp.hitBox) + tmp.hitBox.Width) >= (mCanvas.Width)) || (Canvas.GetLeft(tmp.hitBox) <= 5)))
-                {
-                    enemyDirChange = true;
-                    foreach (bEnemy ench in enemyList)
-                    {
-                        ench.changeMovDir();
                     }
 
-                    if (maxY < 500)
+                    if (tmp.EnemyType != EnemyTypeList.Overseer && (((Canvas.GetLeft(tmp.hitBox) + tmp.hitBox.Width) >= (mCanvas.Width)) || (Canvas.GetLeft(tmp.hitBox) <= 5)))
                     {
-                        MoveEnemiesDown();
+                        enemyDirChange = true;
+                        foreach (bEnemy ench in enemyList)
+                        {
+                            ench.changeMovDir();
+                        }
+
+                        if (maxY < 500)
+                        {
+                            MoveEnemiesDown();
+                        }
                     }
                 }
-            }
 
             foreach (bEnemy tmp in enemyList)
             {
@@ -412,7 +486,7 @@ namespace CW_HLL2
                 foreach (bEnemy lineEnemy in enemyList)
                 {
 
-                    if(shootPosY < Canvas.GetTop(lineEnemy.hitBox))
+                    if (shootPosY < Canvas.GetTop(lineEnemy.hitBox))
                     {
                         if ((shootPosX >= Canvas.GetLeft(lineEnemy.hitBox)) && (shootPosX <= Canvas.GetLeft(lineEnemy.hitBox) + lineEnemy.hitBox.Width) ||
                             ((shootPosX + 3) >= Canvas.GetLeft(lineEnemy.hitBox)) && ((shootPosX + 3) <= Canvas.GetLeft(lineEnemy.hitBox) + lineEnemy.hitBox.Width))
@@ -497,7 +571,7 @@ namespace CW_HLL2
             mCanvas.Children.Add(newBarrier.hitBox);
             barrierList.Add(newBarrier);
         }
-        
+
         private void SpawnPlayerProjectile()
         {
             Projectile newProjectile = new Projectile(16, 8, PlayerData.ProjectileSpeed, 1, true, plrProjectile);
@@ -519,6 +593,17 @@ namespace CW_HLL2
             enemyList.Add(newDrone);
         }
 
+        private Explosion SpawnExplosion(double x, double y, double hght, double width)
+        {
+            Explosion newExpl = new Explosion(hght, width, spritesheetBI, spritesheetData);
+
+            Canvas.SetLeft(newExpl.hitBox, x);
+            Canvas.SetTop(newExpl.hitBox, y);
+            mCanvas.Children.Add(newExpl.hitBox);
+
+            return newExpl;
+        }
+
         private void SpawnBarrierWall(int barrierNumb, double y, int barrierHealth)
         {
             //double xOffset = mCanvas.Width / barrierNumb - 20;
@@ -528,7 +613,7 @@ namespace CW_HLL2
             {
                 //SpawnBarrier((double)i * (48 + 15), y, barrierHealth);
                 //SpawnBarrier((double)(i+1) * xOffset + (66 * i), y, barrierHealth);       //FIX
-                SpawnBarrier(xOffset * (i+1) + (66*i), y, barrierHealth);       //FIX
+                SpawnBarrier(xOffset * (i + 1) + (66 * i), y, barrierHealth);       //FIX
             }
         }
 
@@ -554,7 +639,13 @@ namespace CW_HLL2
         private void updateUI(int plrLives, int plrScore)
         {
             scoreData.Content = plrScore;
-            highscoreData.Content = plrScore;
+            if (plrScore > CurrentHighScore)
+            {
+                highscoreData.Content = plrScore;
+                CurrentHighScore = plrScore;
+            }
+
+            remainingHealthData.Content = plrLives;
         }
 
         private void AnimUpdate()
@@ -569,13 +660,52 @@ namespace CW_HLL2
                 if (!tmp.IsPlayerProjectile)
                     tmp.UpdateFrame(spritesheetData);
             }
-
         }
 
-        private void showPause()
+        private void ExplosionsUpdate()
         {
-            //print on pause
+            foreach (Explosion tmp in explosionList)
+            {
+                if (tmp.IsFinished(spritesheetData))
+                {
+                    tmp.RemoveExplosion(ref hitBoxGC, ref explosionGC);
+                }
+            }
         }
+
+        private void ShootDelay()
+        {
+            if (plrShootDelay < shotDelay)
+            {
+                ++plrShootDelay;
+            }
+        }
+
+        private void EndGame()
+        {
+            bool isNewHighscore = false;
+            if (PlayerData.Score > 0)
+            {
+                int lowestHighscore = (this.HighscoreList.Count > 0 ? this.HighscoreList.Min(x => x.Score) : 0);
+                if ((PlayerData.Score > lowestHighscore) || (this.HighscoreList.Count < MaxHighscoreListEntryCount))
+                {
+                    bdrNewHighscore.Visibility = Visibility.Visible;
+                    txtPlayerName.Focus();
+                    isNewHighscore = true;
+                }
+            }
+            if (!isNewHighscore)
+            {
+                //tbFinalScore.Text = currentScore.ToString();
+                //bdrEndOfGame.Visibility = Visibility.Visible;
+                //playAgain.Visibility = Visibility.Visible;
+                endScreenFinalScore.Text = PlayerData.Score.ToString();
+                EndGameScreen.Visibility = Visibility.Visible;
+            }
+
+            runTimer.IsEnabled = false;
+        }
+
 
         private void gcHitBoxes()
         {
@@ -598,7 +728,7 @@ namespace CW_HLL2
         private void gcProjectiles()
         {
             List<Projectile> toRemove = new List<Projectile>();
-            
+
             foreach (var tmp in projectileGC)
             {
                 projectileList.Remove(tmp);
@@ -634,7 +764,7 @@ namespace CW_HLL2
         private void gcEnemies()
         {
             List<bEnemy> toRemove = new List<bEnemy>();
-            
+
             foreach (var tmp in enemyGC)
             {
                 enemyList.Remove(tmp);
@@ -649,24 +779,149 @@ namespace CW_HLL2
             toRemove.Clear();
         }
 
+        private void gcExplosions()
+        {
+            List<Explosion> toRemove = new List<Explosion>();
+
+            foreach (var tmp in explosionGC)
+            {
+                explosionList.Remove(tmp);
+                toRemove.Add(tmp);
+            }
+
+            foreach (var tmp in toRemove)
+            {
+                explosionGC.Remove(tmp);
+            }
+
+            toRemove.Clear();
+        }
+
+        private void ClearLists()
+        {
+            if (barrierList != null)
+            {
+                foreach (var tmp in barrierList)
+                    tmp.RemoveBarrier(ref hitBoxGC, ref barrierGC);
+                barrierList.Clear();
+            }
+            if (projectileList != null)
+            {
+                foreach (var tmp in projectileList)
+                    tmp.RemoveProjectile(ref hitBoxGC, ref projectileGC);
+                projectileList.Clear();
+            }
+            if (enemyList != null)
+            {
+                foreach (var tmp in enemyList)
+                    tmp.RemoveEnemy(ref hitBoxGC, ref enemyGC);
+                enemyList.Clear();
+            }
+            if (explosionList != null)
+            {
+                foreach (var tmp in explosionList)
+                    tmp.RemoveExplosion(ref hitBoxGC, ref explosionGC);
+                explosionList.Clear();
+            }
+        }
+
         private void ButtonShowScoreList(object sender, RoutedEventArgs e)
         {
             menu.Visibility = Visibility.Collapsed;
-            //bdrHighscoreList.Visibility = Visibility.Visible;
+            HighScoreList.Visibility = Visibility.Visible;
         }
-        
+
         private void GameModeSwitch(object sender, RoutedEventArgs e)
         {
             HardMode = !HardMode;
-            //!!!!!!!!!Change lang!!!!!!!!!
+
             if (HardMode)
             {
-                gameModeSwitch.Content = "Hard Mode";
+                gameModeSwitch.Content = "Повышенная сложность";
             }
             else
             {
-                gameModeSwitch.Content = "Normal Mode";
+                gameModeSwitch.Content = "Нормальнная сложность";
             }
+        }
+
+        private void StartButton(object sender, RoutedEventArgs e)
+        {
+            OnStart = false;
+            menu.Visibility = Visibility.Collapsed;
+            HighScoreList.Visibility = Visibility.Collapsed;
+            EndGameScreen.Visibility = Visibility.Collapsed;
+            GameStart();
+        }
+
+        private void LoadHighscoreList()
+        {
+            if (File.Exists("spcInvdrsHSList.xml"))
+            {
+                XmlSerializer serializer = new XmlSerializer(typeof(List<HighScoreNode>));
+                using (Stream reader = new FileStream("spcInvdrsHSList.xml", FileMode.Open))
+                {
+                    List<HighScoreNode> tempList = (List<HighScoreNode>)serializer.Deserialize(reader);
+                    this.HighscoreList.Clear();
+                    foreach (var item in tempList.OrderByDescending(x => x.Score))
+                        this.HighscoreList.Add(item);
+
+                    CurrentHighScore = this.HighscoreList[0].Score;
+                }
+            }
+        }
+
+        private void SaveHighscoreList()
+        {
+            XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<HighScoreNode>));
+
+            using (Stream writer = new FileStream("spcInvdrsHSList.xml", FileMode.Create))
+            {
+                serializer.Serialize(writer, this.HighscoreList);
+            }
+        }
+
+        private void BtnAddToHighscoreList_Click(object sender, RoutedEventArgs e)
+        {
+            int newIndex = 0;
+            // Where should the new entry be inserted?
+            if ((this.HighscoreList.Count > 0) && (PlayerData.Score < this.HighscoreList.Max(x => x.Score)))
+            {
+                HighScoreNode justAbove = this.HighscoreList.OrderByDescending(x => x.Score).First(x => x.Score >= PlayerData.Score);
+                if (justAbove != null)
+                    newIndex = this.HighscoreList.IndexOf(justAbove) + 1;
+            }
+            // Create & insert the new entry
+            this.HighscoreList.Insert(newIndex, new HighScoreNode()
+            {
+                PlayerName = txtPlayerName.Text,
+                Score = PlayerData.Score
+            }); ;
+            // Make sure that the amount of entries does not exceed the maximum
+            while (this.HighscoreList.Count > MaxHighscoreListEntryCount)
+                this.HighscoreList.RemoveAt(MaxHighscoreListEntryCount);
+
+            SaveHighscoreList();
+
+            bdrNewHighscore.Visibility = Visibility.Collapsed;
+            HighScoreList.Visibility = Visibility.Visible;
+        }
+
+        private void BtnPlayAgainClck(object sender, RoutedEventArgs e)
+        {
+            GameStart();
+        }
+
+        private void BtnExitClck(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
+        }
+
+        private void BtnBackToMainClck(object sender, RoutedEventArgs e)
+        {
+            HighScoreList.Visibility = Visibility.Collapsed;
+            EndGameScreen.Visibility = Visibility.Collapsed;
+            menu.Visibility = Visibility.Visible;
         }
     }
 }

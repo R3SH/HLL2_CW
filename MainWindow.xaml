@@ -4,37 +4,104 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CW_HLL2"
+        xmlns:scm="clr-namespace:System.ComponentModel;assembly=WindowsBase"
         mc:Ignorable="d"
-        Title="GalagaClone"
+        x:Name="window"
+        Title="Space Invaders"
         WindowState="Normal"
         WindowStyle="SingleBorderWindow"
         SizeToContent="WidthAndHeight"
         ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
         >
 
+    <Window.Resources>
+        <CollectionViewSource Source="{Binding ElementName=window, Path=HighscoreList}" x:Key="HighScoreListViewSource">
+            <CollectionViewSource.SortDescriptions>
+                <scm:SortDescription Direction="Descending" PropertyName="Score" />
+            </CollectionViewSource.SortDescriptions>
+        </CollectionViewSource>
+    </Window.Resources>
+
     <Border BorderBrush="White" BorderThickness="5">
         <Canvas Name="mCanvas" ClipToBounds ="True" Height="720" Width="480" Focusable="True" Background="Black" KeyDown="KeyIsDown" KeyUp="KeyIsUp">
-            <Label Name="scoreTxt" Content="SCORE:" FontSize="14" FontWeight="Bold" Foreground="Red" Canvas.Left="58" HorizontalAlignment="Stretch"/>
-            <Label Name="scoreData" Content="" FontSize="14" FontWeight="Bold" Foreground="White" Canvas.Left="82" Canvas.Top="23"/>
-            <Label Name="highscoreTxt" Content="HIGHSCORE:" FontSize="14" FontWeight="Bold" Canvas.Right="0" Foreground="Red" Canvas.Left="273"/>
-            <Label Name="highscoreData" Content="" FontSize="14" FontWeight="Bold" Foreground="White" Canvas.Left="315" Canvas.Top="23"/>
+            <Label Name="scoreTxt" Content="ОЧКИ:" FontSize="14" FontWeight="Bold" Foreground="Red" Canvas.Left="40"/>
+            <Label Name="scoreData" Content="" FontSize="14" FontWeight="Bold" Foreground="White" Canvas.Left="57" Canvas.Top="23"/>
+            <Label Name="highscoreTxt" Content="РЕКОРД:" FontSize="14" FontWeight="Bold" Canvas.Right="0" Foreground="Red" Canvas.Left="206"/>
+            <Label Name="highscoreData" Content="" FontSize="14" FontWeight="Bold" Foreground="White" Canvas.Left="230" Canvas.Top="23"/>
+            <Label Name="remainingHealth" Content="ПРОЧНОСТЬ:" FontSize="14" FontWeight="Bold" Canvas.Right="0" Foreground="Red" Canvas.Left="363"/>
+            <Label Name="remainingHealthData" Content="" FontSize="14" FontWeight="Bold" Foreground="White" Canvas.Left="403" Canvas.Top="23"/>
+
+            <Border BorderBrush="Silver" BorderThickness="2" Height="640" Width="400" Canvas.Left="40" Canvas.Top="50" Name="HighScoreList" Panel.ZIndex="1" Visibility="Collapsed">
+                <StackPanel Orientation="Vertical" Background="AliceBlue">
+                    <Border BorderThickness="0,0,0,2" BorderBrush="Silver" Margin="0,10">
+                        <TextBlock HorizontalAlignment="Center" FontSize="34" FontWeight="Bold">Рекорды</TextBlock>
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding Source={StaticResource HighScoreListViewSource}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="7">
+                                    <TextBlock Text="{Binding PlayerName}" DockPanel.Dock="Left" FontSize="22"></TextBlock>
+                                    <TextBlock Text="{Binding Score}" DockPanel.Dock="Right" FontSize="22" HorizontalAlignment="Right"></TextBlock>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock TextWrapping="Wrap" Margin="40" FontSize="16"></TextBlock>
+                    <Button Name="btnBackToMainClck" FontSize="16" HorizontalAlignment="Center" Click="BtnBackToMainClck" Padding="10,5">В главное меню</Button>
+                    <TextBlock TextWrapping="Wrap" Margin="10" FontSize="16"></TextBlock>
+                    <Button Name="btnExitClck2" FontSize="16" HorizontalAlignment="Center" Click="BtnExitClck" Padding="10,5">Выход</Button>
+                </StackPanel>
+            </Border>
+
+            <Border BorderBrush="Silver" BorderThickness="2" Width="400" Height="310" Canvas.Left="40" Canvas.Top="50" Name="bdrNewHighscore" Panel.ZIndex="1">
+                <StackPanel Orientation="Vertical" Background="AliceBlue">
+                    <TextBlock HorizontalAlignment="Center" FontSize="34" FontWeight="Bold" Margin="20">Новый рекорд!</TextBlock>
+                    <TextBlock HorizontalAlignment="Center" TextWrapping="Wrap" FontSize="16">Введите свое имя...</TextBlock>
+                    <TextBox Name="txtPlayerName" FontSize="28" FontWeight="Bold" MaxLength="8" Margin="20" HorizontalContentAlignment="Center"></TextBox>
+                    <Button Name="btnAddToHighscoreList" FontSize="16" HorizontalAlignment="Center" Click="BtnAddToHighscoreList_Click" Padding="10,5">Добавить в список</Button>
+                </StackPanel>
+            </Border>
+
+            <Border BorderBrush="Silver" BorderThickness="2" Width="400" Height="640" Canvas.Left="40" Canvas.Top="50" Name="playAgain" Panel.ZIndex="1">
+                <StackPanel Orientation="Vertical" Background="AliceBlue">
+                    <Button Name="btnPlayAgainClck" FontSize="16" HorizontalAlignment="Center" Click="BtnPlayAgainClck" Padding="10,5">Играть заново</Button>
+                    <Button Name="btnExitClck" FontSize="16" HorizontalAlignment="Center" Click="BtnExitClck" Padding="10,5">Выход</Button>
+                </StackPanel>
+            </Border>
+
+            <Border BorderBrush="Silver" BorderThickness="2" Width="400" Height="640" Canvas.Left="40" Canvas.Top="50" Name="EndGameScreen" Panel.ZIndex="1" Visibility="Collapsed">
+                <StackPanel Orientation="Vertical" Background="AliceBlue">
+                    <TextBlock HorizontalAlignment="Center" FontSize="30" FontWeight="Bold">Вы погибли!</TextBlock>
+                    <TextBlock Margin="20" TextAlignment="Center" FontSize="16">Ваш счет:</TextBlock>
+                    <TextBlock Name="endScreenFinalScore" TextAlignment="Center" FontSize="48" FontWeight="Bold" Foreground="Maroon">0</TextBlock>
+                    <Button Name="btnBackToMainClck1" FontSize="16" HorizontalAlignment="Center" Click="BtnBackToMainClck" Padding="10,5">В главное меню</Button>
+                    <TextBlock TextWrapping="Wrap" Margin="10" FontSize="16"></TextBlock>
+                    <Button Name="btnExitClck4" FontSize="16" HorizontalAlignment="Center" Click="BtnExitClck" Padding="10,5">Выход</Button>
+                </StackPanel>
+            </Border>
 
             <Border BorderBrush="Silver" BorderThickness="2" Width="400" Height="640" Canvas.Left="40" Canvas.Top="50" Name="pause" Panel.ZIndex="1">
                 <StackPanel Orientation="Vertical" Background="AliceBlue">
                     <TextBlock FontWeight="Bold" FontSize="50" HorizontalAlignment="Center" Margin="0,20,0,0">Пауза</TextBlock>
                     <TextBlock TextWrapping="Wrap" Margin="20" FontSize="16"></TextBlock>
-                    <TextBlock FontWeight="Bold" HorizontalAlignment="Center" FontSize="20" Foreground="Maroon">Нажмите "Пробел" чтобы продолжить,</TextBlock>
-                    <TextBlock FontWeight="Bold" HorizontalAlignment="Center" FontSize="20" Foreground="Maroon">"Esc" чтобы выйти</TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="20" FontSize="16"></TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="20" FontSize="16"></TextBlock>
+                    <TextBlock FontWeight="Bold" FontSize="20" Foreground="Maroon" Height="44" Width="384"><Run Text="Нажмите &quot;Пробел&quot; для продолжения,"/></TextBlock>
+                    <TextBlock FontWeight="Bold" FontSize="20" Foreground="Maroon" Height="139" Width="191"><Run Text="&quot;Esc&quot; для выхода."/></TextBlock>
                 </StackPanel>
             </Border>
 
             <Border BorderBrush="Silver" BorderThickness="2" Width="400" Height="640" Canvas.Left="40" Canvas.Top="50" Name="menu" Panel.ZIndex="1">
                 <StackPanel Orientation="Vertical" Background="AliceBlue">
-                    <TextBlock FontWeight="Bold" FontSize="50" HorizontalAlignment="Center" Margin="0,20,0,0">SnakeWPF</TextBlock>
-                    <TextBlock TextWrapping="Wrap" Margin="20" FontSize="16">Use the Arrow keys to control the green snake. Make it eat the red apples, but be sure not to crash into the walls or the tail of the snake!</TextBlock>
-                    <TextBlock FontWeight="Bold" HorizontalAlignment="Center" FontSize="24" Foreground="Maroon">Press SPACE to start!</TextBlock>
-                    <Button Margin="20" Name="gameModeSwitch" Click="GameModeSwitch" HorizontalAlignment="Center" Padding="10,3">Normal Mode</Button>
-                    <Button Margin="20" Name="buttonShowScoreList" Click="ButtonShowScoreList" HorizontalAlignment="Center" Padding="10,3">Show High Score List...</Button>
+                    <TextBlock FontWeight="Bold" FontSize="50" HorizontalAlignment="Center" Margin="0,20,0,0">SpcInvdrs</TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="20" FontSize="16" Foreground="Maroon" Width="304" TextAlignment="Center">Используйте стрелки влево/вправо для передвижения, "пробел" для стрельбы, "Esc" для паузы.</TextBlock>
+                    <TextBlock FontWeight="Bold" HorizontalAlignment="Center" FontSize="24" Foreground="Maroon"></TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="20" FontSize="16"></TextBlock>
+                    <Button x:Name="startButton" FontSize="16" Click="StartButton" Padding="10,5" Content="НАЧАТЬ"/>
+                    <Button x:Name="gameModeSwitch" FontSize="16" Click="GameModeSwitch" Padding="10,5" Content="Нормальная сложность"/>
+                    <Button x:Name="buttonShowScoreList" FontSize="16" Click="ButtonShowScoreList" Padding="10,5" Content="Таблица рекордов"/>
+                    <Button x:Name="btnExitClck3" FontSize="16" Click="BtnExitClck" Padding="10,5" Content="Выход"/>
                 </StackPanel>
             </Border>
 
