@@ -58,7 +58,6 @@ namespace CW_HLL2
         DispatcherTimer runTimer = new DispatcherTimer();
         ImageBrush plrSkin = new ImageBrush();
         ImageBrush plrProjectile = new ImageBrush();
-        ImageBrush zakoSprite = new ImageBrush();
         BitmapImage spritesheetBI = new BitmapImage();
         SpritesheetData spritesheetData;
 
@@ -101,7 +100,6 @@ namespace CW_HLL2
 
             plrSkin.ImageSource = new BitmapImage(new Uri(Environment.CurrentDirectory + "/res/ship.png"));
             plrProjectile.ImageSource = new BitmapImage(new Uri(Environment.CurrentDirectory + "/res/projectiles/Shot4/shot4_5f.png"));
-            zakoSprite.ImageSource = new BitmapImage(new Uri(Environment.CurrentDirectory + "/res/zako.png"));
             spritesheetBI.BeginInit();
             spritesheetBI.UriSource = new Uri(Environment.CurrentDirectory + "/res/spritesheet.png");
             spritesheetBI.EndInit();
@@ -125,6 +123,8 @@ namespace CW_HLL2
                 game.DronePts *= 3;
                 game.AlienPts *= 3;
                 game.EnforcerPts *= 3;
+                game.EnemySpeed = 3;
+                game.EnemyDescendSpeed = 5;
             }
             else
             {
@@ -447,10 +447,7 @@ namespace CW_HLL2
             {
                 if (tmp.EnemyType != EnemyTypeList.Overseer)
                     Canvas.SetLeft(tmp.hitBox, Canvas.GetLeft(tmp.hitBox) + tmp.MovSpeed);
-                //TODO: add height check?
             }
-
-            //MoveOverseers();
         }
 
         private void EnemyShoot()
@@ -496,8 +493,27 @@ namespace CW_HLL2
             //spawning enemy projectile
             if (closestDr != -1)
             {
-                Projectile newProjectile = new Projectile(16, 8, enemyList[closestDr].ProjectileSpeed, 1,
+                Projectile newProjectile;
+
+                switch (enemyList[closestDr].EnemyType)
+                {
+                    case EnemyTypeList.Drone:
+                        newProjectile = new Projectile(16, 8, enemyList[closestDr].ProjectileSpeed, game.DroneDamage,
                     enemyList[closestDr].EnemyType, spritesheetBI, spritesheetData);
+                        break;
+                    case EnemyTypeList.Alien:
+                        newProjectile = new Projectile(16, 8, enemyList[closestDr].ProjectileSpeed, game.AlienDamage,
+                    enemyList[closestDr].EnemyType, spritesheetBI, spritesheetData);
+                        break;
+                    case EnemyTypeList.Enforcer:
+                        newProjectile = new Projectile(16, 8, enemyList[closestDr].ProjectileSpeed, game.EnforcerDamage,
+                    enemyList[closestDr].EnemyType, spritesheetBI, spritesheetData);
+                        break;
+                    default:
+                        newProjectile = new Projectile(16, 8, enemyList[closestDr].ProjectileSpeed, 1,
+                    enemyList[closestDr].EnemyType, spritesheetBI, spritesheetData);
+                        break;
+                }
 
                 Canvas.SetLeft(newProjectile.hitBox, Canvas.GetLeft(enemyList[closestDr].hitBox) +
                     (enemyList[closestDr].hitBox.Width - newProjectile.hitBox.Width) / 2);
@@ -669,7 +685,7 @@ namespace CW_HLL2
             bool isNewHighscore = false;
             if (PlayerData.Score > 0)
             {
-                int lowestHighscore = (this.HighscoreList.Count > 0 ? this.HighscoreList.Min(x => x.Score) : 0);
+                int lowestHighscore = this.HighscoreList.Count > 0 ? this.HighscoreList.Min(x => x.Score) : 0;
                 if ((PlayerData.Score > lowestHighscore) || (this.HighscoreList.Count < MaxHighscoreListEntryCount))
                 {
                     bdrNewHighscore.Visibility = Visibility.Visible;
@@ -679,9 +695,6 @@ namespace CW_HLL2
             }
             if (!isNewHighscore)
             {
-                //tbFinalScore.Text = currentScore.ToString();
-                //bdrEndOfGame.Visibility = Visibility.Visible;
-                //playAgain.Visibility = Visibility.Visible;
                 endScreenFinalScore.Text = PlayerData.Score.ToString();
                 EndGameScreen.Visibility = Visibility.Visible;
             }
