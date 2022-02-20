@@ -1,12 +1,16 @@
 <?xml version="1.0"?>
 <ArrayOfHighScoreNode xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <HighScoreNode>
+    <PlayerName>TopRec</PlayerName>
+    <Score>2500</Score>
+  </HighScoreNode>
+  <HighScoreNode>
     <PlayerName>IDKFA</PlayerName>
     <Score>1730</Score>
   </HighScoreNode>
   <HighScoreNode>
-    <PlayerName>newOne</PlayerName>
-    <Score>330</Score>
+    <PlayerName>NewTest2</PlayerName>
+    <Score>1110</Score>
   </HighScoreNode>
   <HighScoreNode>
     <PlayerName>IDDQD</PlayerName>
@@ -17,7 +21,23 @@
     <Score>490</Score>
   </HighScoreNode>
   <HighScoreNode>
-    <PlayerName>Test3</PlayerName>
+    <PlayerName>newOne</PlayerName>
+    <Score>330</Score>
+  </HighScoreNode>
+  <HighScoreNode>
+    <PlayerName>noided</PlayerName>
     <Score>320</Score>
+  </HighScoreNode>
+  <HighScoreNode>
+    <PlayerName>newOne2</PlayerName>
+    <Score>300</Score>
+  </HighScoreNode>
+  <HighScoreNode>
+    <PlayerName>newOne3</PlayerName>
+    <Score>290</Score>
+  </HighScoreNode>
+  <HighScoreNode>
+    <PlayerName>newOne4</PlayerName>
+    <Score>280</Score>
   </HighScoreNode>
 </ArrayOfHighScoreNode>

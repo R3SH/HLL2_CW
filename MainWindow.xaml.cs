@@ -37,16 +37,17 @@ namespace CW_HLL2
         List<bEnemy> enemyList;
         List<Explosion> explosionList;
 
-        const int MaxHighscoreListEntryCount = 5;
+        const int MaxHighscoreListEntryCount = 10;
         const int shotDelay = 20;
         int AnimUpdateTimer, plrShootDelay;
         int CurrentHighScore = 0;
 
-        bool movUp, movDown, movLeft, movRight;
+        bool movLeft, movRight;
 
         bool OnStart, OnPause, HardMode;
 
         Game game;
+        SoundHandler SndHandler;
 
         List<Rectangle> hitBoxGC;
         List<Barrier> barrierGC;
@@ -85,6 +86,8 @@ namespace CW_HLL2
             OnPause = false;
 
             plrShootDelay = shotDelay;
+
+            SndHandler = new SoundHandler();
 
             hitBoxGC = new List<Rectangle>();
             barrierGC = new List<Barrier>();
@@ -206,11 +209,10 @@ namespace CW_HLL2
                 }
                 else
                 {
+                    SndHandler.Play(SoundList.PlrDth);
                     hitBoxGC.Add(PlayerData.hitBox);
                     ClearLists();
                     EndGame();
-                    //playAgain.Visibility = Visibility.Visible;
-                    //Application.Current.Shutdown();
                 }
 
             }
@@ -235,14 +237,6 @@ namespace CW_HLL2
             {
                 movRight = true;
             }
-            if (e.Key == Key.Up)
-            {
-                movUp = true;
-            }
-            if (e.Key == Key.Down)
-            {
-                movDown = true;
-            }
             if (e.Key == Key.Space)
             {
                 if (plrShootDelay == shotDelay)
@@ -264,20 +258,13 @@ namespace CW_HLL2
             {
                 movRight = false;
             }
-            if (e.Key == Key.Up)
-            {
-                movUp = false;
-            }
-            if (e.Key == Key.Down)
-            {
-                movDown = false;
-            }
             if (e.Key == Key.Escape)
             {
                 if (!OnPause && !OnStart)
                 {
                     OnPause = true;
                     pause.Visibility = Visibility.Visible;
+                    SndHandler.Play(SoundList.MenuPress);
                 }
             }
             if (e.Key == Key.Space)
@@ -337,12 +324,15 @@ namespace CW_HLL2
                                     {
                                         case EnemyTypeList.Drone:
                                             PlayerData.AddScore(game.DronePts);
+                                            SndHandler.Play(SoundList.DroneDth);
                                             break;
                                         case EnemyTypeList.Alien:
                                             PlayerData.AddScore(game.AlienPts);
+                                            SndHandler.Play(SoundList.DroneDth);
                                             break;
                                         case EnemyTypeList.Enforcer:
                                             PlayerData.AddScore(game.EnforcerPts);
+                                            SndHandler.Play(SoundList.EnforDth);
                                             break;
                                         case EnemyTypeList.Overseer:
                                             PlayerData.AddScore(game.OverseerPts);
@@ -369,6 +359,11 @@ namespace CW_HLL2
                                 if (tmpBar.Health == 0)
                                 {
                                     tmpBar.RemoveBarrier(ref hitBoxGC, ref barrierGC);
+                                    SndHandler.Play(SoundList.BarrierDestroyed);
+                                }
+                                else
+                                {
+                                    SndHandler.Play(SoundList.BarrierHit);
                                 }
                                 prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
                             }
@@ -392,6 +387,7 @@ namespace CW_HLL2
                         {
                             PlayerData.RemoveLife();
                             prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
+                            SndHandler.Play(SoundList.PlrHit);
                         }
 
                         foreach (Barrier tmpBar in barrierList)
@@ -404,29 +400,19 @@ namespace CW_HLL2
                                 if (tmpBar.Health == 0)
                                 {
                                     tmpBar.RemoveBarrier(ref hitBoxGC, ref barrierGC);
+                                    SndHandler.Play(SoundList.BarrierDestroyed);
                                 }
+                                else
+                                {
+                                    SndHandler.Play(SoundList.BarrierHit);
+                                }
+
                                 prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
                             }
                         }
                     }
                 }
             }
-
-            //Redundant for current gameplay
-            //Check player collision with enemies
-            //Rect plrHitbox = new Rect(Canvas.GetLeft(PlayerData.hitBox), Canvas.GetTop(PlayerData.hitBox), PlayerData.hitBox.Width, PlayerData.hitBox.Height);
-
-            //foreach (bEnemy enemy in enemyList)
-            //{
-            //    Rect enemyHitbox = new Rect(Canvas.GetLeft(enemy.hitBox), Canvas.GetTop(enemy.hitBox), enemy.hitBox.Width, enemy.hitBox.Height);
-
-            //    if (plrHitbox.IntersectsWith(enemyHitbox))
-            //    {
-            //        PlayerData.RemoveLife();
-
-            //        enemy.RemoveEnemy(ref hitBoxGC, ref enemyGC);
-            //    }
-            //}
         }
 
         private void MoveEnemies()
@@ -523,6 +509,8 @@ namespace CW_HLL2
 
                 mCanvas.Children.Add(newProjectile.hitBox);
                 projectileList.Add(newProjectile);
+
+                SndHandler.Play(SoundList.EnemyShoot);
             }
         }
 
@@ -545,14 +533,6 @@ namespace CW_HLL2
             {
                 Canvas.SetLeft(PlayerData.hitBox, Canvas.GetLeft(PlayerData.hitBox) + plrSpeed);
             }
-            if (movDown && (Canvas.GetTop(PlayerData.hitBox) + PlayerData.hitBox.Height) < mCanvas.ActualHeight)
-            {
-                Canvas.SetTop(PlayerData.hitBox, Canvas.GetTop(PlayerData.hitBox) + plrSpeed);
-            }
-            if (movUp && Canvas.GetTop(PlayerData.hitBox) > 0)
-            {
-                Canvas.SetTop(PlayerData.hitBox, Canvas.GetTop(PlayerData.hitBox) - plrSpeed);
-            }
         }
 
         private void SpawnPlayer(double x, double y)
@@ -574,6 +554,8 @@ namespace CW_HLL2
 
         private void SpawnPlayerProjectile()
         {
+            SndHandler.Play(SoundList.PlrShoot);
+
             Projectile newProjectile = new Projectile(16, 8, PlayerData.ProjectileSpeed, 1, true, plrProjectile);
 
             Canvas.SetLeft(newProjectile.hitBox, Canvas.GetLeft(PlayerData.hitBox) + (PlayerData.hitBox.Width - newProjectile.hitBox.Width) / 2);
@@ -634,6 +616,7 @@ namespace CW_HLL2
             SpawnEnemyRow(130, EnemyTypeList.Alien);
             SpawnEnemyRow(95, EnemyTypeList.Enforcer);
             SpawnEnemyRow(60, EnemyTypeList.Enforcer);
+            SndHandler.Play(SoundList.EnemySpawn);
         }
 
         private void updateUI(int plrLives, int plrScore)
@@ -829,6 +812,7 @@ namespace CW_HLL2
         {
             menu.Visibility = Visibility.Collapsed;
             HighScoreList.Visibility = Visibility.Visible;
+            SndHandler.Play(SoundList.MenuPress);
         }
 
         private void GameModeSwitch(object sender, RoutedEventArgs e)
@@ -843,6 +827,8 @@ namespace CW_HLL2
             {
                 gameModeSwitch.Content = "Нормальнная сложность";
             }
+            
+            SndHandler.Play(SoundList.MenuPress);
         }
 
         private void StartButton(object sender, RoutedEventArgs e)
@@ -851,6 +837,7 @@ namespace CW_HLL2
             menu.Visibility = Visibility.Collapsed;
             HighScoreList.Visibility = Visibility.Collapsed;
             EndGameScreen.Visibility = Visibility.Collapsed;
+            SndHandler.Play(SoundList.MenuPress);
             GameStart();
         }
 
@@ -883,6 +870,8 @@ namespace CW_HLL2
 
         private void BtnAddToHighscoreList_Click(object sender, RoutedEventArgs e)
         {
+            SndHandler.Play(SoundList.MenuPress);
+
             int newIndex = 0;
             // Where should the new entry be inserted?
             if ((this.HighscoreList.Count > 0) && (PlayerData.Score < this.HighscoreList.Max(x => x.Score)))
@@ -909,16 +898,20 @@ namespace CW_HLL2
 
         private void BtnPlayAgainClck(object sender, RoutedEventArgs e)
         {
+            SndHandler.Play(SoundList.MenuPress);
             GameStart();
         }
 
         private void BtnExitClck(object sender, RoutedEventArgs e)
         {
+            SndHandler.Play(SoundList.MenuPress);
             Application.Current.Shutdown();
         }
 
         private void BtnBackToMainClck(object sender, RoutedEventArgs e)
         {
+            SndHandler.Play(SoundList.MenuPress);
+
             HighScoreList.Visibility = Visibility.Collapsed;
             EndGameScreen.Visibility = Visibility.Collapsed;
             menu.Visibility = Visibility.Visible;

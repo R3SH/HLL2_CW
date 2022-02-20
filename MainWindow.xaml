@@ -47,9 +47,9 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <TextBlock TextWrapping="Wrap" Margin="40" FontSize="16"></TextBlock>
-                    <Button Name="btnBackToMainClck" FontSize="16" HorizontalAlignment="Center" Click="BtnBackToMainClck" Padding="10,5">В главное меню</Button>
                     <TextBlock TextWrapping="Wrap" Margin="10" FontSize="16"></TextBlock>
+                    <Button Name="btnBackToMainClck" FontSize="16" HorizontalAlignment="Center" Click="BtnBackToMainClck" Padding="10,5">В главное меню</Button>
+                    <TextBlock TextWrapping="Wrap" Margin="5" FontSize="8"></TextBlock>
                     <Button Name="btnExitClck2" FontSize="16" HorizontalAlignment="Center" Click="BtnExitClck" Padding="10,5">Выход</Button>
                 </StackPanel>
             </Border>
