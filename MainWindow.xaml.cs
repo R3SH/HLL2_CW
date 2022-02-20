@@ -115,11 +115,13 @@ namespace CW_HLL2
             if (game != null)
                 game = null;
 
-            game = new Game(2, 3, 4, 1, 2, 3, 10, 20, 30, 100);
+            game = new Game(2, 3, 4, 1, 1, 2, 10, 20, 30, 100);
 
             if (HardMode)
             {
                 PlayerData = new Plr(45, 45, 5, 8, 3, 0, plrSkin);
+                game.AlienDamage++;
+                game.EnforcerDamage++;
                 game.DronePts *= 3;
                 game.AlienPts *= 3;
                 game.EnforcerPts *= 3;
@@ -174,6 +176,11 @@ namespace CW_HLL2
 
                     if (enemyList.Count == 0)
                     {
+                        PlayerData.AddLife();
+                        if (HardMode)
+                        {
+                            game.EnemyDescendSpeed++;
+                        }
                         game.EnemySpeed++;
                         SpawnEnemyWave();
                     }
@@ -227,7 +234,6 @@ namespace CW_HLL2
                 {
                     Application.Current.Shutdown();
                 }
-                //game.OnPause = !game.OnPause;
             }
             if (e.Key == Key.Left)
             {
@@ -385,7 +391,7 @@ namespace CW_HLL2
 
                         if (enemyPrjHitbox.IntersectsWith(playerHitbox))
                         {
-                            PlayerData.RemoveLife();
+                            PlayerData.Lives -= prj.Damage;
                             prj.RemoveProjectile(ref hitBoxGC, ref projectileGC);
                             SndHandler.Play(SoundList.PlrHit);
                         }
@@ -520,8 +526,10 @@ namespace CW_HLL2
                 Canvas.SetTop(newProjectile.hitBox, Canvas.GetTop(enemyList[closestDr].hitBox) + enemyList[closestDr].hitBox.Height
                     - newProjectile.hitBox.Height);
 
+#if(DEBUG)
                 //EnemyLightUp
                 enemyList[closestDr].hitBox.Fill = Brushes.Red;
+#endif
 
                 mCanvas.Children.Add(newProjectile.hitBox);
                 projectileList.Add(newProjectile);
